@@ -262,6 +262,9 @@
     "url": "URL"
   },
   "header": {
+    "download_app": "Download App",
+    "download_mac": "Download for macOS",
+    "download_windows": "Download for Windows",
     "install_pwa": "Install app",
     "login": "Login",
     "save_workspace": "Save My Workspace"

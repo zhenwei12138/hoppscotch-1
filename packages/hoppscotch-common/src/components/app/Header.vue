@@ -18,7 +18,7 @@
       </div>
       <div class="inline-flex items-center justify-center flex-1 space-x-2">
         <button
-          class="flex flex-1 items-center justify-between px-2 py-1 bg-primaryDark transition text-secondaryLight cursor-text rounded border border-dividerDark max-w-xs hover:border-dividerDark hover:bg-primaryLight hover:text-secondary focus-visible:border-dividerDark focus-visible:bg-primaryLight focus-visible:text-secondary"
+          class="flex flex-1 items-center justify-between px-2 py-1.75 md:py-1.25 bg-primaryDark transition text-secondaryLight cursor-text rounded border border-dividerDark max-w-60 hover:border-dividerDark hover:bg-primaryLight hover:text-secondary focus-visible:border-dividerDark focus-visible:bg-primaryLight focus-visible:text-secondary"
           @click="invokeAction('modals.search.toggle')"
         >
           <span class="inline-flex flex-1 items-center">
@@ -31,14 +31,6 @@
           </span>
         </button>
         <HoppButtonSecondary
-          v-if="showInstallButton"
-          v-tippy="{ theme: 'tooltip' }"
-          :title="t('header.install_pwa')"
-          :icon="IconDownload"
-          class="rounded hover:bg-primaryDark focus-visible:bg-primaryDark"
-          @click="installPWA()"
-        />
-        <HoppButtonSecondary
           v-tippy="{ theme: 'tooltip', allowHTML: true }"
           :title="`${
             mdAndLarger ? t('support.title') : t('app.options')
@@ -49,6 +41,45 @@
         />
       </div>
       <div class="inline-flex items-center justify-end flex-1 space-x-2">
+        <span>
+          <tippy
+            interactive
+            trigger="click"
+            theme="popover"
+            :on-shown="() => downloadActions.focus()"
+          >
+            <HoppButtonSecondary
+              v-tippy="{ theme: 'tooltip' }"
+              :title="t('header.download_app')"
+              :icon="IconDownload"
+              class="bg-purple-500/15 rounded py-1.75 border border-purple-600/25 !text-purple-500 hover:bg-purple-400/10 focus-visible:bg-purple-400/10 focus-visible:border-purple-800/50 !focus-visible:text-purple-600 hover:border-purple-800/50 !hover:text-purple-600"
+            />
+            <template #content="{ hide }">
+              <div
+                ref="downloadActions"
+                class="flex flex-col focus:outline-none"
+                tabindex="0"
+                @keyup.escape="hide()"
+                @click="hide()"
+              >
+                <HoppSmartItem
+                  :label="t('header.download_mac')"
+                  :icon="IconApple"
+                />
+                <HoppSmartItem
+                  :label="t('header.download_windows')"
+                  :icon="IconWindows"
+                />
+                <HoppSmartItem
+                  v-if="showInstallButton"
+                  :label="t('header.install_pwa')"
+                  :icon="IconDownload"
+                  @click="installPWA()"
+                />
+              </div>
+            </template>
+          </tippy>
+        </span>
         <div
           v-if="currentUser === null"
           class="inline-flex items-center space-x-2"
@@ -243,6 +274,8 @@ import IconDownload from "~icons/lucide/download"
 import IconUploadCloud from "~icons/lucide/upload-cloud"
 import IconUserPlus from "~icons/lucide/user-plus"
 import IconLifeBuoy from "~icons/lucide/life-buoy"
+import IconApple from "~icons/hopp/apple"
+import IconWindows from "~icons/hopp/windows"
 import { breakpointsTailwind, useBreakpoints, useNetwork } from "@vueuse/core"
 import { pwaDefferedPrompt, installPWA } from "@modules/pwa"
 import { platform } from "~/platform"
@@ -381,6 +414,7 @@ const profile = ref<any | null>(null)
 const settings = ref<any | null>(null)
 const logout = ref<any | null>(null)
 const accountActions = ref<any | null>(null)
+const downloadActions = ref<any | null>(null)
 
 defineActionHandler(
   "user.login",
