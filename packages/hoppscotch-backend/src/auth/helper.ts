@@ -20,6 +20,7 @@ export enum Origin {
 export enum AuthProvider {
   GOOGLE = 'GOOGLE',
   GITHUB = 'GITHUB',
+  GITLAB = 'GITLAB',
   MICROSOFT = 'MICROSOFT',
   EMAIL = 'EMAIL',
 }

@@ -25,7 +25,9 @@ async function logout() {
 async function signInUserWithGithubFB() {
   window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/github`
 }
-
+async function signInUserWithGitlabFB() {
+  window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/gitlab`
+}
 async function signInUserWithGoogleFB() {
   window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/google`
 }
@@ -271,6 +273,10 @@ export const def: AuthPlatformDef = {
   },
   async signInUserWithGithub() {
     await signInUserWithGithubFB()
+    return undefined
+  },
+  async signInUserWithGitlab() {
+    await signInUserWithGitlabFB()
     return undefined
   },
   async signInUserWithMicrosoft() {

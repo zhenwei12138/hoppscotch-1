@@ -66,6 +66,12 @@ async function signInUserWithGithubFB() {
   }/auth/github?redirect_uri=${import.meta.env.VITE_ADMIN_URL}`;
 }
 
+async function signInUserWithGitlabFB() {
+  window.location.href = `${
+    import.meta.env.VITE_BACKEND_API_URL
+  }/auth/gitlab?redirect_uri=${import.meta.env.VITE_ADMIN_URL}`;
+}
+
 async function signInUserWithGoogleFB() {
   window.location.href = `${
     import.meta.env.VITE_BACKEND_API_URL
@@ -324,6 +330,10 @@ export const auth = {
   },
   async signInUserWithGithub() {
     await signInUserWithGithubFB();
+    return undefined;
+  },
+  async signInUserWithGitlab() {
+    await signInUserWithGitlabFB();
     return undefined;
   },
   async signInUserWithMicrosoft() {

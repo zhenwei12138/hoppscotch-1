@@ -92,6 +92,7 @@
     "all_sign_in_options": "Усі параметри входу",
     "continue_with_email": "Продовжити з електронною поштою",
     "continue_with_github": "Продовжити з GitHub",
+    "continue_with_gitlab": "Продовжити з GitLab",
     "continue_with_google": "Продовжити з Google",
     "continue_with_microsoft": "Продовжити з Microsoft",
     "email": "Електронна пошта",

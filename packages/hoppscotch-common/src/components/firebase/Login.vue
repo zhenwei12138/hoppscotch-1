@@ -118,6 +118,7 @@ import { useI18n } from "@composables/i18n"
 import { platform } from "~/platform"
 import { setLocalConfig } from "~/newstore/localpersistence"
 
+import IconGitlab from "~icons/auth/wework"
 import IconGithub from "~icons/auth/github"
 import IconGoogle from "~icons/auth/google"
 import IconEmail from "~icons/auth/email"
@@ -144,6 +145,7 @@ const form = {
 
 const signingInWithGoogle = ref(false)
 const signingInWithGitHub = ref(false)
+const signingInWithGitLab = ref(false)
 const signingInWithMicrosoft = ref(false)
 const signingInWithEmail = ref(false)
 const mode = ref("sign-in")
@@ -231,6 +233,40 @@ const signInWithGithub = async () => {
   signingInWithGitHub.value = false
 }
 
+const signInWithGitLab = async () => {
+  signingInWithGitLab.value = true
+
+  const result = await platform.auth.signInUserWithGitlab()
+
+  if (!result) {
+    signingInWithGitLab.value = false
+    return
+  }
+
+  if (result.type === "success") {
+    // this.showLoginSuccess()
+  } else if (result.type === "account-exists-with-different-cred") {
+    toast.info(`${t("auth.account_exists")}`, {
+      duration: 0,
+      closeOnSwipe: false,
+      action: {
+        text: `${t("action.yes")}`,
+        onClick: async (_, toastObject) => {
+          await result.link()
+          showLoginSuccess()
+
+          toastObject.goAway(0)
+        },
+      },
+    })
+  } else {
+    console.log("error logging into github", result.err)
+    toast.error(`${t("error.something_went_wrong")}`)
+  }
+
+  signingInWithGitLab.value = false
+}
+
 const signInWithMicrosoft = async () => {
   signingInWithMicrosoft.value = true
 
@@ -280,6 +316,13 @@ const hideModal = () => {
 }
 
 const authProviders: AuthProviderItem[] = [
+  {
+    id: "GITLAB",
+    icon: IconGitlab,
+    label: t("auth.continue_with_gitlab"),
+    action: signInWithGitLab,
+    isLoading: signingInWithGitLab,
+  },
   {
     id: "GITHUB",
     icon: IconGithub,

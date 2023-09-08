@@ -92,6 +92,7 @@
     "all_sign_in_options": "Tüm oturum açma seçenekleri",
     "continue_with_email": "E-posta ile devam et",
     "continue_with_github": "GitHub hesabı ile devam et",
+    "continue_with_gitlab": "GitLab hesabı ile devam et",
     "continue_with_google": "Google hesabı ile devam et",
     "continue_with_microsoft": "Microsoft hesabı ile devam et",
     "email": "E-posta",

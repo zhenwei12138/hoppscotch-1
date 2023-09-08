@@ -92,6 +92,7 @@
     "all_sign_in_options": "Kaikki kirjautumisvaihtoehdot",
     "continue_with_email": "Jatka sähköpostilla",
     "continue_with_github": "Jatka GitHubilla",
+    "continue_with_gitlab": "Jatka GitLab",
     "continue_with_google": "Jatka Googlella",
     "continue_with_microsoft": "Continue with Microsoft",
     "email": "Sähköposti",

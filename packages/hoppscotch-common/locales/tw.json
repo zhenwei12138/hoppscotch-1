@@ -92,6 +92,7 @@
     "all_sign_in_options": "所有登入選項",
     "continue_with_email": "使用電子信箱登入",
     "continue_with_github": "使用 GitHub 登入",
+    "continue_with_gitlab": "使用 GitLab 登入",
     "continue_with_google": "使用 Google 登入",
     "continue_with_microsoft": "使用 Microsoft 登入",
     "email": "電子信箱地址",
