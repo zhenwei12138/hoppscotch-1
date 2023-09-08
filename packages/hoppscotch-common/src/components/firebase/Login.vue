@@ -118,7 +118,7 @@ import { useI18n } from "@composables/i18n"
 import { platform } from "~/platform"
 import { setLocalConfig } from "~/newstore/localpersistence"
 
-import IconGitlab from "~icons/auth/wework"
+import IconGitlab from "~icons/auth/gitlab"
 import IconGithub from "~icons/auth/github"
 import IconGoogle from "~icons/auth/google"
 import IconEmail from "~icons/auth/email"

@@ -152,7 +152,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import IconGithub from '~icons/auth/github';
-import IconGitlab from '~icons/auth/wework';
+import IconGitlab from '~icons/auth/gitlab';
 import IconGoogle from '~icons/auth/google';
 import IconEmail from '~icons/auth/email';
 import IconMicrosoft from '~icons/auth/microsoft';
