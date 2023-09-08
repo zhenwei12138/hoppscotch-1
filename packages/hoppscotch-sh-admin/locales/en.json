@@ -39,6 +39,7 @@
     "enter_team_email": "Please enter email of team owner!!",
     "error": "Something went wrong",
     "continue_github": "Continue with Github",
+    "continue_gitlab": "Continue with Gitlab",
     "continue_google": "Continue with Google",
     "continue_microsoft": "Continue with Microsoft",
     "continue_email": "Continue with Email",

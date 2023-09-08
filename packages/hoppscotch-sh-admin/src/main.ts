@@ -1,5 +1,5 @@
 import { createApp } from 'vue';
-import urql, { createClient } from '@urql/vue';
+import urql, { cacheExchange, createClient, fetchExchange } from '@urql/vue';
 import App from './App.vue';
 
 // STYLES
@@ -21,6 +21,7 @@ import { auth } from './helpers/auth';
     urql,
     createClient({
       url: import.meta.env.VITE_BACKEND_GQL_URL,
+      exchanges: [cacheExchange, fetchExchange],
       requestPolicy: 'network-only',
       fetchOptions: () => {
         return {
