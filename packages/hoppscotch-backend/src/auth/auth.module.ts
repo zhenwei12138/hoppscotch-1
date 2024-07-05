@@ -34,15 +34,6 @@ import { InfraConfigModule } from 'src/infra-config/infra-config.module';
     InfraConfigModule,
   ],
   providers: [AuthService, JwtStrategy, RTJwtStrategy],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    RTJwtStrategy,
-    ...(authProviderCheck(AuthProvider.GOOGLE) ? [GoogleStrategy] : []),
-    ...(authProviderCheck(AuthProvider.GITHUB) ? [GithubStrategy] : []),
-    ...(authProviderCheck(AuthProvider.GITLAB) ? [GitlabStrategy] : []),
-    ...(authProviderCheck(AuthProvider.MICROSOFT) ? [MicrosoftStrategy] : []),
-  ],
   controllers: [AuthController],
 })
 export class AuthModule {
@@ -64,6 +55,9 @@ export class AuthModule {
         : []),
       ...(authProviderCheck(AuthProvider.MICROSOFT, allowedAuthProviders)
         ? [MicrosoftStrategy]
+        : []),
+      ...(authProviderCheck(AuthProvider.GITLAB, allowedAuthProviders)
+        ? [GitlabStrategy]
         : []),
     ];
 
