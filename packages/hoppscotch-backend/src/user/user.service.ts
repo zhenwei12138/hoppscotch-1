@@ -168,7 +168,6 @@ export class UserService {
   ) {
     const userDisplayName = !profile.displayName ? null : profile.displayName;
     const userPhotoURL = !profile.photos ? null : profile.photos[0].value;
-
     const createdUser = await this.prisma.user.create({
       data: {
         displayName: userDisplayName,

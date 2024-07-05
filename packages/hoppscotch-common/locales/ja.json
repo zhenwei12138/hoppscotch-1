@@ -103,6 +103,7 @@
     "all_sign_in_options": "すべてのサインインオプション",
     "continue_with_email": "メールアドレスで続行",
     "continue_with_github": "GitHubアカウントで続行",
+    "continue_with_gitlab": "GitLabアカウントで続行",
     "continue_with_google": "Googleアカウントで続行",
     "continue_with_microsoft": "Microsoftアカウントで続行",
     "email": "メールアドレス",

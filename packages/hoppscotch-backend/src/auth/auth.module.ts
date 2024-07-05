@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { RTJwtStrategy } from './strategies/rt-jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
+import { GitlabStrategy } from './strategies/gitlab.strategy';
 import { MicrosoftStrategy } from './strategies/microsoft.strategy';
 import { AuthProvider, authProviderCheck } from './helper';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -33,6 +34,15 @@ import { InfraConfigModule } from 'src/infra-config/infra-config.module';
     InfraConfigModule,
   ],
   providers: [AuthService, JwtStrategy, RTJwtStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RTJwtStrategy,
+    ...(authProviderCheck(AuthProvider.GOOGLE) ? [GoogleStrategy] : []),
+    ...(authProviderCheck(AuthProvider.GITHUB) ? [GithubStrategy] : []),
+    ...(authProviderCheck(AuthProvider.GITLAB) ? [GitlabStrategy] : []),
+    ...(authProviderCheck(AuthProvider.MICROSOFT) ? [MicrosoftStrategy] : []),
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {
