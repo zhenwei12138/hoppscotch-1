@@ -6,14 +6,17 @@ import { TeamEnvironment } from './team-environments.model';
 import {
   TEAM_ENVIRONMENT_NOT_FOUND,
   TEAM_ENVIRONMENT_SHORT_NAME,
+  TEAM_MEMBER_NOT_FOUND,
 } from 'src/errors';
 import * as E from 'fp-ts/Either';
 import { isValidLength } from 'src/utils';
+import { TeamService } from 'src/team/team.service';
 @Injectable()
 export class TeamEnvironmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pubsub: PubSubService,
+    private readonly teamService: TeamService,
   ) {}
 
   TITLE_LENGTH = 3;
@@ -183,11 +186,10 @@ export class TeamEnvironmentsService {
    */
   async createDuplicateEnvironment(id: string) {
     try {
-      const environment = await this.prisma.teamEnvironment.findFirst({
+      const environment = await this.prisma.teamEnvironment.findFirstOrThrow({
         where: {
           id: id,
         },
-        rejectOnNotFound: true,
       });
 
       const result = await this.prisma.teamEnvironment.create({
@@ -242,5 +244,31 @@ export class TeamEnvironmentsService {
       },
     });
     return envCount;
+  }
+
+  /**
+   * Get details of a TeamEnvironment for CLI.
+   *
+   * @param id TeamEnvironment ID
+   * @param userUid User UID
+   * @returns Either of a TeamEnvironment or error message
+   */
+  async getTeamEnvironmentForCLI(id: string, userUid: string) {
+    try {
+      const teamEnvironment =
+        await this.prisma.teamEnvironment.findFirstOrThrow({
+          where: { id },
+        });
+
+      const teamMember = await this.teamService.getTeamMember(
+        teamEnvironment.teamID,
+        userUid,
+      );
+      if (!teamMember) return E.left(TEAM_MEMBER_NOT_FOUND);
+
+      return E.right(teamEnvironment);
+    } catch (error) {
+      return E.left(TEAM_ENVIRONMENT_NOT_FOUND);
+    }
   }
 }

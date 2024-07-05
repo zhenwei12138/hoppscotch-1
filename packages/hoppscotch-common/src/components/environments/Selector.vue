@@ -6,10 +6,9 @@
       theme="popover"
       :on-shown="() => envSelectorActions!.focus()"
     >
-      <span
+      <HoppSmartSelectWrapper
         v-tippy="{ theme: 'tooltip' }"
         :title="`${t('environment.select')}`"
-        class="select-wrapper"
       >
         <HoppButtonSecondary
           :icon="IconLayers"
@@ -20,9 +19,9 @@
                 : `${t('environment.select')}`
               : ''
           "
-          class="flex-1 !justify-start pr-8 rounded-none"
+          class="flex-1 !justify-start rounded-none pr-8"
         />
-      </span>
+      </HoppSmartSelectWrapper>
       <template #content="{ hide }">
         <div
           ref="envSelectorActions"
@@ -66,7 +65,7 @@
           />
           <HoppSmartTabs
             v-model="selectedEnvTab"
-            :styles="`sticky overflow-x-auto my-2 border border-divider rounded flex-shrink-0 z-0 top-0 bg-primary ${
+            :styles="`sticky overflow-x-auto my-2 border border-divider rounded flex-shrink-0 z-10 top-0 bg-primary ${
               !isTeamSelected || workspace.type === 'personal'
                 ? 'bg-primaryLight'
                 : ''
@@ -94,20 +93,12 @@
                   }
                 "
               />
-              <div
+              <HoppSmartPlaceholder
                 v-if="myEnvironments.length === 0"
-                class="flex flex-col items-center justify-center text-secondaryLight"
-              >
-                <img
-                  :src="`/images/states/${colorMode.value}/blockchain.svg`"
-                  loading="lazy"
-                  class="inline-flex flex-col object-contain object-center w-16 h-16 mb-2"
-                  :alt="`${t('empty.environments')}`"
-                />
-                <span class="pb-2 text-center">
-                  {{ t("empty.environments") }}
-                </span>
-              </div>
+                :src="`/images/states/${colorMode.value}/blockchain.svg`"
+                :alt="`${t('empty.environments')}`"
+                :text="t('empty.environments')"
+              />
             </HoppSmartTab>
             <HoppSmartTab
               :id="'team-environments'"
@@ -141,26 +132,18 @@
                     }
                   "
                 />
-                <div
+                <HoppSmartPlaceholder
                   v-if="teamEnvironmentList.length === 0"
-                  class="flex flex-col items-center justify-center text-secondaryLight"
-                >
-                  <img
-                    :src="`/images/states/${colorMode.value}/blockchain.svg`"
-                    loading="lazy"
-                    class="inline-flex flex-col object-contain object-center w-16 h-16 mb-2"
-                    :alt="`${t('empty.environments')}`"
-                  />
-                  <span class="pb-2 text-center">
-                    {{ t("empty.environments") }}
-                  </span>
-                </div>
+                  :src="`/images/states/${colorMode.value}/blockchain.svg`"
+                  :alt="`${t('empty.environments')}`"
+                  :text="t('empty.environments')"
+                />
               </div>
               <div
                 v-if="!teamListLoading && teamAdapterError"
                 class="flex flex-col items-center py-4"
               >
-                <icon-lucide-help-circle class="mb-4 svg-icons" />
+                <icon-lucide-help-circle class="svg-icons mb-4" />
                 {{ getErrorMessage(teamAdapterError) }}
               </div>
             </HoppSmartTab>
@@ -190,7 +173,7 @@
             @keyup.escape="hide()"
           >
             <div
-              class="sticky top-0 font-semibold truncate flex items-center justify-between text-secondaryDark bg-primary border border-divider rounded pl-4"
+              class="sticky top-0 flex items-center justify-between truncate rounded border border-divider bg-primary pl-4 font-semibold text-secondaryDark"
             >
               {{ t("environment.global_variables") }}
               <HoppButtonSecondary
@@ -205,12 +188,16 @@
                 "
               />
             </div>
-            <div class="my-2 flex flex-col flex-1 space-y-2 pl-4 pr-2">
+            <div class="my-2 flex flex-1 flex-col space-y-2 pl-4 pr-2">
               <div class="flex flex-1 space-x-4">
-                <span class="w-1/4 min-w-32 truncate text-tiny font-semibold">
+                <span
+                  class="min-w-[9rem] w-1/4 truncate text-tiny font-semibold"
+                >
                   {{ t("environment.name") }}
                 </span>
-                <span class="w-full min-w-32 truncate text-tiny font-semibold">
+                <span
+                  class="min-w-[9rem] w-full truncate text-tiny font-semibold"
+                >
                   {{ t("environment.value") }}
                 </span>
               </div>
@@ -219,11 +206,14 @@
                 :key="index"
                 class="flex flex-1 space-x-4"
               >
-                <span class="text-secondaryLight w-1/4 min-w-32 truncate">
+                <span class="min-w-[9rem] w-1/4 truncate text-secondaryLight">
                   {{ variable.key }}
                 </span>
-                <span class="text-secondaryLight w-full min-w-32 truncate">
-                  {{ variable.value }}
+                <span class="min-w-[9rem] w-full truncate text-secondaryLight">
+                  <template v-if="variable.secret"> ******** </template>
+                  <template v-else>
+                    {{ variable.value }}
+                  </template>
                 </span>
               </div>
               <div v-if="globalEnvs.length === 0" class="text-secondaryLight">
@@ -231,7 +221,7 @@
               </div>
             </div>
             <div
-              class="sticky top-0 mt-2 font-semibold truncate flex items-center justify-between text-secondaryDark bg-primary border border-divider rounded pl-4"
+              class="sticky top-0 mt-2 flex items-center justify-between truncate rounded border border-divider bg-primary pl-4 font-semibold text-secondaryDark"
               :class="{
                 'bg-primaryLight': !selectedEnv.variables,
               }"
@@ -252,16 +242,20 @@
             </div>
             <div
               v-if="selectedEnv.type === 'NO_ENV_SELECTED'"
-              class="text-secondaryLight my-2 flex flex-col flex-1 pl-4"
+              class="my-2 flex flex-1 flex-col pl-4 text-secondaryLight"
             >
               {{ t("environment.no_active_environment") }}
             </div>
-            <div v-else class="my-2 flex flex-col flex-1 space-y-2 pl-4 pr-2">
+            <div v-else class="my-2 flex flex-1 flex-col space-y-2 pl-4 pr-2">
               <div class="flex flex-1 space-x-4">
-                <span class="w-1/4 min-w-32 truncate text-tiny font-semibold">
+                <span
+                  class="min-w-[9rem] w-1/4 truncate text-tiny font-semibold"
+                >
                   {{ t("environment.name") }}
                 </span>
-                <span class="w-full min-w-32 truncate text-tiny font-semibold">
+                <span
+                  class="min-w-[9rem] w-full truncate text-tiny font-semibold"
+                >
                   {{ t("environment.value") }}
                 </span>
               </div>
@@ -270,11 +264,14 @@
                 :key="index"
                 class="flex flex-1 space-x-4"
               >
-                <span class="text-secondaryLight w-1/4 min-w-32 truncate">
+                <span class="min-w-[9rem] w-1/4 truncate text-secondaryLight">
                   {{ variable.key }}
                 </span>
-                <span class="text-secondaryLight w-full min-w-32 truncate">
-                  {{ variable.value }}
+                <span class="min-w-[9rem] w-full truncate text-secondaryLight">
+                  <template v-if="variable.secret"> ******** </template>
+                  <template v-else>
+                    {{ variable.value }}
+                  </template>
                 </span>
               </div>
               <div
@@ -308,7 +305,6 @@ import {
   selectedEnvironmentIndex$,
   setSelectedEnvironmentIndex,
 } from "~/newstore/environments"
-import { changeWorkspace, workspaceStatus$ } from "~/newstore/workspace"
 import TeamEnvironmentAdapter from "~/helpers/teams/TeamEnvironmentAdapter"
 import { useColorMode } from "@composables/theming"
 import { breakpointsTailwind, useBreakpoints } from "@vueuse/core"
@@ -316,10 +312,10 @@ import { invokeAction } from "~/helpers/actions"
 import { TeamEnvironment } from "~/helpers/teams/TeamEnvironment"
 import { Environment } from "@hoppscotch/data"
 import { onMounted } from "vue"
-import { onLoggedIn } from "~/composables/auth"
-import TeamListAdapter from "~/helpers/teams/TeamListAdapter"
 import { useLocalState } from "~/newstore/localstate"
 import { GetMyTeamsQuery } from "~/helpers/backend/graphql"
+import { useService } from "dioc/vue"
+import { WorkspaceService } from "~/services/workspace.service"
 
 type Scope =
   | {
@@ -353,24 +349,22 @@ type EnvironmentType = "my-environments" | "team-environments"
 
 const myEnvironments = useReadonlyStream(environments$, [])
 
-const workspace = useReadonlyStream(workspaceStatus$, { type: "personal" })
+const workspaceService = useService(WorkspaceService)
+const workspace = workspaceService.currentWorkspace
 
 // TeamList-Adapter
-const teamListAdapter = new TeamListAdapter(true)
+const teamListAdapter = workspaceService.acquireTeamListAdapter(null)
 const myTeams = useReadonlyStream(teamListAdapter.teamList$, null)
 const teamListFetched = ref(false)
 const REMEMBERED_TEAM_ID = useLocalState("REMEMBERED_TEAM_ID")
 
-onLoggedIn(() => {
-  !teamListAdapter.isInitialized && teamListAdapter.initialize()
-})
-
 const switchToTeamWorkspace = (team: GetMyTeamsQuery["myTeams"][number]) => {
   REMEMBERED_TEAM_ID.value = team.id
-  changeWorkspace({
+  workspaceService.changeWorkspace({
     teamID: team.id,
     teamName: team.name,
     type: "team",
+    role: team.myRole,
   })
 }
 watch(
@@ -450,12 +444,11 @@ const isEnvActive = (id: string | number) => {
   } else {
     if (selectedEnvironmentIndex.value.type === "MY_ENV") {
       return selectedEnv.value.index === id
-    } else {
-      return (
-        selectedEnvironmentIndex.value.type === "TEAM_ENV" &&
-        selectedEnv.value.teamEnvID === id
-      )
     }
+    return (
+      selectedEnvironmentIndex.value.type === "TEAM_ENV" &&
+      selectedEnv.value.teamEnvID === id
+    )
   }
 }
 
@@ -482,7 +475,8 @@ watch(
         teamEnvListAdapter.changeTeamID(newVal.teamID)
       }
     }
-  }
+  },
+  { immediate: true }
 )
 
 const selectedEnv = computed(() => {
@@ -492,47 +486,48 @@ const selectedEnv = computed(() => {
         type: "MY_ENV",
         index: props.modelValue.index,
         name: props.modelValue.environment?.name,
+        variables: props.modelValue.environment?.variables,
       }
     } else if (props.modelValue?.type === "team-environment") {
       return {
         type: "TEAM_ENV",
         name: props.modelValue.environment.environment.name,
         teamEnvID: props.modelValue.environment.id,
+        variables: props.modelValue.environment.environment.variables,
       }
-    } else {
-      return { type: "global", name: "Global" }
     }
-  } else {
-    if (selectedEnvironmentIndex.value.type === "MY_ENV") {
-      const environment =
-        myEnvironments.value[selectedEnvironmentIndex.value.index]
-      return {
-        type: "MY_ENV",
-        index: selectedEnvironmentIndex.value.index,
-        name: environment.name,
-        variables: environment.variables,
-      }
-    } else if (selectedEnvironmentIndex.value.type === "TEAM_ENV") {
-      const teamEnv = teamEnvironmentList.value.find(
-        (env) =>
-          env.id ===
-          (selectedEnvironmentIndex.value.type === "TEAM_ENV" &&
-            selectedEnvironmentIndex.value.teamEnvID)
-      )
-      if (teamEnv) {
-        return {
-          type: "TEAM_ENV",
-          name: teamEnv.environment.name,
-          teamEnvID: selectedEnvironmentIndex.value.teamEnvID,
-          variables: teamEnv.environment.variables,
-        }
-      } else {
-        return { type: "NO_ENV_SELECTED" }
-      }
-    } else {
-      return { type: "NO_ENV_SELECTED" }
+    return {
+      type: "global",
+      name: "Global",
     }
   }
+  if (selectedEnvironmentIndex.value.type === "MY_ENV") {
+    const environment =
+      myEnvironments.value[selectedEnvironmentIndex.value.index]
+    return {
+      type: "MY_ENV",
+      index: selectedEnvironmentIndex.value.index,
+      name: environment.name,
+      variables: environment.variables,
+    }
+  } else if (selectedEnvironmentIndex.value.type === "TEAM_ENV") {
+    const teamEnv = teamEnvironmentList.value.find(
+      (env) =>
+        env.id ===
+        (selectedEnvironmentIndex.value.type === "TEAM_ENV" &&
+          selectedEnvironmentIndex.value.teamEnvID)
+    )
+    if (teamEnv) {
+      return {
+        type: "TEAM_ENV",
+        name: teamEnv.environment.name,
+        teamEnvID: selectedEnvironmentIndex.value.teamEnvID,
+        variables: teamEnv.environment.variables,
+      }
+    }
+    return { type: "NO_ENV_SELECTED" }
+  }
+  return { type: "NO_ENV_SELECTED" }
 })
 
 // Set the selected environment as initial scope value
@@ -580,13 +575,12 @@ const envQuickPeekActions = ref<TippyComponent | null>(null)
 const getErrorMessage = (err: GQLError<string>) => {
   if (err.type === "network_error") {
     return t("error.network_error")
-  } else {
-    switch (err.error) {
-      case "team_environment/not_found":
-        return t("team_environment.not_found")
-      default:
-        return t("error.something_went_wrong")
-    }
+  }
+  switch (err.error) {
+    case "team_environment/not_found":
+      return t("team_environment.not_found")
+    default:
+      return t("error.something_went_wrong")
   }
 }
 
@@ -595,15 +589,12 @@ const globalEnvs = useReadonlyStream(globalEnv$, [])
 const environmentVariables = computed(() => {
   if (selectedEnv.value.variables) {
     return selectedEnv.value.variables
-  } else {
-    return []
   }
+  return []
 })
 
 const editGlobalEnv = () => {
-  invokeAction("modals.my.environment.edit", {
-    envName: "Global",
-  })
+  invokeAction("modals.global.environment.update", {})
 }
 
 const editEnv = () => {

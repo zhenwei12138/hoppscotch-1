@@ -1,14 +1,17 @@
 {
   "action": {
+    "add": "Add",
     "autoscroll": "Autoscroll",
     "cancel": "zrušení",
     "choose_file": "Vyberte soubor",
     "clear": "Průhledná",
     "clear_all": "Vymazat vše",
+    "clear_history": "Clear all History",
     "close": "Close",
     "connect": "Připojit",
     "connecting": "Connecting",
     "copy": "kopírovat",
+    "create": "Create",
     "delete": "Vymazat",
     "disconnect": "Odpojit",
     "dismiss": "Zavrhnout",
@@ -30,13 +33,16 @@
     "open_workspace": "Open workspace",
     "paste": "Paste",
     "prettify": "Prettify",
+    "properties": "Properties",
     "remove": "Odstranit",
+    "rename": "Rename",
     "restore": "Obnovit",
     "save": "Uložit",
     "scroll_to_bottom": "Scroll to bottom",
     "scroll_to_top": "Scroll to top",
     "search": "Vyhledávání",
     "send": "Poslat",
+    "share": "Share",
     "start": "Start",
     "starting": "Starting",
     "stop": "Stop",
@@ -55,7 +61,9 @@
   "app": {
     "chat_with_us": "piš si s námi",
     "contact_us": "Kontaktujte nás",
+    "cookies": "Cookies",
     "copy": "kopírovat",
+    "copy_interface_type": "Copy interface type",
     "copy_user_id": "Copy User Auth Token",
     "developer_option": "Developer options",
     "developer_option_description": "Developer tools which helps in development and maintenance of Hoppscotch.",
@@ -71,12 +79,15 @@
     "keyboard_shortcuts": "Klávesové zkratky",
     "name": "Hoppscotch",
     "new_version_found": "Nalezena nová verze. Aktualizujte aktualizací.",
+    "open_in_hoppscotch": "Open in Hoppscotch",
     "options": "Options",
     "proxy_privacy_policy": "Zásady ochrany osobních údajů proxy",
     "reload": "Znovu načíst",
     "search": "Vyhledávání",
     "share": "Podíl",
     "shortcuts": "Klávesové zkratky",
+    "social_description": "Follow us on social media to stay updated with the latest news, updates and releases.",
+    "social_links": "Social links",
     "spotlight": "Reflektor",
     "status": "Postavení",
     "status_description": "Check the status of the website",
@@ -109,10 +120,27 @@
   },
   "authorization": {
     "generate_token": "Generovat token",
+    "graphql_headers": "Authorization Headers are sent as part of the payload to connection_init",
     "include_in_url": "Zahrnout do adresy URL",
+    "inherited_from": "Inherited from {auth} from Parent Collection {collection} ",
     "learn": "Zjistěte jak",
+    "oauth": {
+      "redirect_auth_server_returned_error": "Auth Server returned an error state",
+      "redirect_auth_token_request_failed": "Request to get the auth token failed",
+      "redirect_auth_token_request_invalid_response": "Invalid Response from the Token Endpoint when requesting for an auth token",
+      "redirect_invalid_state": "Invalid State value present in the redirect",
+      "redirect_no_auth_code": "No Authorization Code present in the redirect",
+      "redirect_no_client_id": "No Client ID defined",
+      "redirect_no_client_secret": "No Client Secret Defined",
+      "redirect_no_code_verifier": "No Code Verifier Defined",
+      "redirect_no_token_endpoint": "No Token Endpoint Defined",
+      "something_went_wrong_on_oauth_redirect": "Something went wrong during OAuth Redirect",
+      "something_went_wrong_on_token_generation": "Something went wrong on token generation",
+      "token_generation_oidc_discovery_failed": "Failure on token generation: OpenID Connect Discovery Failed"
+    },
     "pass_key_by": "Pass by",
     "password": "Heslo",
+    "save_to_inherit": "Please save this request in any collection to inherit the authorization",
     "token": "Žeton",
     "type": "Typ autorizace",
     "username": "Uživatelské jméno"
@@ -121,6 +149,7 @@
     "created": "Kolekce vytvořena",
     "different_parent": "Cannot reorder collection with different parent",
     "edit": "Upravit sbírku",
+    "import_or_create": "Import or create a collection",
     "invalid_name": "Uveďte prosím platný název kolekce",
     "invalid_root_move": "Collection already in the root",
     "moved": "Moved Successfully",
@@ -129,15 +158,20 @@
     "name_length_insufficient": "Collection name should be at least 3 characters long",
     "new": "Nová kolekce",
     "order_changed": "Collection Order Updated",
+    "properties": "Collection Properties",
+    "properties_updated": "Collection Properties Updated",
     "renamed": "Sbírka přejmenována",
     "request_in_use": "Request in use",
     "save_as": "Uložit jako",
+    "save_to_collection": "Save to Collection",
     "select": "Vyberte sbírku",
     "select_location": "Vyberte umístění",
     "select_team": "Vyberte tým",
     "team_collections": "Týmové sbírky"
   },
   "confirm": {
+    "close_unsaved_tab": "Are you sure you want to close this tab?",
+    "close_unsaved_tabs": "Are you sure you want to close all tabs? {count} unsaved tabs will be lost.",
     "exit_team": "Are you sure you want to leave this team?",
     "logout": "Opravdu se chcete odhlásit?",
     "remove_collection": "Opravdu chcete tuto sbírku trvale smazat?",
@@ -145,11 +179,35 @@
     "remove_folder": "Opravdu chcete tuto složku trvale smazat?",
     "remove_history": "Opravdu chcete trvale smazat celou historii?",
     "remove_request": "Opravdu chcete tento požadavek trvale smazat?",
+    "remove_shared_request": "Are you sure you want to permanently delete this shared request?",
     "remove_team": "Opravdu chcete tento tým smazat?",
     "remove_telemetry": "Opravdu se chcete odhlásit z telemetrie?",
     "request_change": "Are you sure you want to discard current request, unsaved changes will be lost.",
     "save_unsaved_tab": "Do you want to save changes made in this tab?",
     "sync": "Opravdu chcete synchronizovat tento pracovní prostor?"
+  },
+  "context_menu": {
+    "add_parameters": "Add to parameters",
+    "open_request_in_new_tab": "Open request in new tab",
+    "set_environment_variable": "Set as variable"
+  },
+  "cookies": {
+    "modal": {
+      "cookie_expires": "Expires",
+      "cookie_name": "Name",
+      "cookie_path": "Path",
+      "cookie_string": "Cookie string",
+      "cookie_value": "Value",
+      "empty_domain": "Domain is empty",
+      "empty_domains": "Domain list is empty",
+      "enter_cookie_string": "Enter cookie string",
+      "interceptor_no_support": "Your currently selected interceptor does not support cookies. Select a different Interceptor and try again.",
+      "managed_tab": "Managed",
+      "new_domain_name": "New domain name",
+      "no_cookies_in_domain": "No cookies set for this domain",
+      "raw_tab": "Raw",
+      "set": "Set a cookie"
+    }
   },
   "count": {
     "header": "Záhlaví {count}",
@@ -181,11 +239,13 @@
     "profile": "Login to view your profile",
     "protocols": "Protokoly jsou prázdné",
     "schema": "Připojte se ke koncovému bodu GraphQL",
-    "shortcodes": "Shortcodes are empty",
+    "shared_requests": "Shared requests are empty",
+    "shared_requests_logout": "Login to view your shared requests or create a new one",
     "subscription": "Subscriptions are empty",
     "team_name": "Název týmu prázdný",
     "teams": "Týmy jsou prázdné",
-    "tests": "Pro tento požadavek neexistují žádné testy"
+    "tests": "Pro tento požadavek neexistují žádné testy",
+    "shortcodes": "Shortcodes are empty"
   },
   "environment": {
     "add_to_global": "Add to Global",
@@ -193,22 +253,39 @@
     "create_new": "Vytvořit nové prostředí",
     "created": "Environment created",
     "deleted": "Environment deletion",
+    "duplicated": "Environment duplicated",
     "edit": "Upravit prostředí",
+    "empty_variables": "No variables",
+    "global": "Global",
+    "global_variables": "Global variables",
+    "import_or_create": "Import or create a environment",
     "invalid_name": "Zadejte platný název prostředí",
+    "list": "Environment variables",
     "my_environments": "My Environments",
+    "name": "Name",
     "nested_overflow": "nested environment variables are limited to 10 levels",
     "new": "Nové prostředí",
+    "no_active_environment": "No active environment",
     "no_environment": "Žádné prostředí",
     "no_environment_description": "No environments were selected. Choose what to do with the following variables.",
+    "quick_peek": "Environment Quick Peek",
+    "replace_with_variable": "Replace with variable",
+    "scope": "Scope",
     "select": "Vyberte prostředí",
+    "set": "Set environment",
+    "set_as_environment": "Set as environment",
     "team_environments": "Team Environments",
     "title": "Prostředí",
     "updated": "Environment updation",
+    "value": "Value",
+    "variable": "Variable",
     "variable_list": "Seznam proměnných"
   },
   "error": {
+    "authproviders_load_error": "Unable to load auth providers",
     "browser_support_sse": "Zdá se, že tento prohlížeč nemá podporu událostí odeslaných serverem.",
     "check_console_details": "Podrobnosti najdete v protokolu konzoly.",
+    "check_how_to_add_origin": "Check how you can add an origin",
     "curl_invalid_format": "cURL nemá správný formát",
     "danger_zone": "Danger zone",
     "delete_account": "Your account is currently an owner in these teams:",
@@ -224,9 +301,13 @@
     "json_prettify_invalid_body": "Nelze předtifikovat neplatné tělo, vyřešit chyby syntaxe json a zkusit to znovu",
     "network_error": "There seems to be a network error. Please try again.",
     "network_fail": "Žádost nelze odeslat",
+    "no_collections_to_export": "No collections to export. Please create a collection to get started.",
     "no_duration": "Žádné trvání",
+    "no_environments_to_export": "No environments to export. Please create an environment to get started.",
     "no_results_found": "No matches found",
     "page_not_found": "This page could not be found",
+    "please_install_extension": "Please install the extension and add origin to the extension.",
+    "proxy_error": "Proxy error",
     "script_fail": "Skript předběžného požadavku nelze spustit",
     "something_went_wrong": "Něco se pokazilo",
     "test_script_fail": "Could not execute post-request script"
@@ -234,6 +315,7 @@
   "export": {
     "as_json": "Exportovat jako JSON",
     "create_secret_gist": "Vytvořte tajnou podstatu",
+    "failed": "Something went wrong while exporting",
     "gist_created": "Podstata vytvořena",
     "require_github": "Přihlaste se pomocí GitHub a vytvořte tajný seznam",
     "title": "Export"
@@ -252,9 +334,16 @@
     "renamed": "Složka přejmenována"
   },
   "graphql": {
+    "connection_switch_confirm": "Do you want to connect with the latest GraphQL endpoint?",
+    "connection_switch_new_url": "Switching to a tab will disconnected you from the active GraphQL connection. New connection URL is",
+    "connection_switch_url": "You're connected to a GraphQL endpoint the connection URL is",
     "mutations": "Mutace",
     "schema": "Schéma",
-    "subscriptions": "Předplatné"
+    "subscriptions": "Předplatné",
+    "switch_connection": "Switch connection"
+  },
+  "graphql_collections": {
+    "title": "GraphQL Collections"
   },
   "group": {
     "time": "Time",
@@ -267,6 +356,8 @@
   },
   "helpers": {
     "authorization": "Autorizační hlavička se automaticky vygeneruje při odeslání požadavku.",
+    "collection_properties_authorization": " This authorization will be set for every request in this collection.",
+    "collection_properties_header": "This header will be set for every request in this collection.",
     "generate_documentation_first": "Nejprve vytvořte dokumentaci",
     "network_fail": "Nelze dosáhnout koncového bodu API. Zkontrolujte připojení k síti a zkuste to znovu.",
     "offline": "Zdá se, že jste offline. Data v tomto pracovním prostoru nemusí být aktuální.",
@@ -286,7 +377,10 @@
   "import": {
     "collections": "Import sbírek",
     "curl": "Importovat cURL",
+    "environments_from_gist": "Import From Gist",
+    "environments_from_gist_description": "Import Hoppscotch Environments From Gist",
     "failed": "Import se nezdařil",
+    "from_file": "Import from File",
     "from_gist": "Import z Gist",
     "from_gist_description": "Import from Gist URL",
     "from_insomnia": "Import from Insomnia",
@@ -301,27 +395,58 @@
     "from_postman_description": "Import from Postman collection",
     "from_url": "Import from URL",
     "gist_url": "Zadejte URL adresy",
+    "gql_collections_from_gist_description": "Import GraphQL Collections From Gist",
+    "hoppscotch_environment": "Hoppscotch Environment",
+    "hoppscotch_environment_description": "Import Hoppscotch Environment JSON file",
     "import_from_url_invalid_fetch": "Couldn't get data from the url",
     "import_from_url_invalid_file_format": "Error while importing collections",
     "import_from_url_invalid_type": "Unsupported type. accepted values are 'hoppscotch', 'openapi', 'postman', 'insomnia'",
     "import_from_url_success": "Collections Imported",
+    "insomnia_environment_description": "Import Insomnia Environment from a JSON/YAML file",
     "json_description": "Import collections from a Hoppscotch Collections JSON file",
+    "postman_environment": "Postman Environment",
+    "postman_environment_description": "Import Postman Environment from a JSON file",
     "title": "Import"
+  },
+  "inspections": {
+    "description": "Inspect possible errors",
+    "environment": {
+      "add_environment": "Add to Environment",
+      "not_found": "Environment variable “{environment}” not found."
+    },
+    "header": {
+      "cookie": "The browser doesn't allow Hoppscotch to set the Cookie Header. While we're working on the Hoppscotch Desktop App (coming soon), please use the Authorization Header instead."
+    },
+    "response": {
+      "401_error": "Please check your authentication credentials.",
+      "404_error": "Please check your request URL and method type.",
+      "cors_error": "Please check your Cross-Origin Resource Sharing configuration.",
+      "default_error": "Please check your request.",
+      "network_error": "Please check your network connection."
+    },
+    "title": "Inspector",
+    "url": {
+      "extension_not_installed": "Extension not installed.",
+      "extension_unknown_origin": "Make sure you've added the API endpoint's origin to the Hoppscotch Browser Extension list.",
+      "extention_enable_action": "Enable Browser Extension",
+      "extention_not_enabled": "Extension not enabled."
+    }
   },
   "layout": {
     "collapse_collection": "Collapse or Expand Collections",
     "collapse_sidebar": "Collapse or Expand the sidebar",
     "column": "Vertical layout",
     "name": "Layout",
-    "row": "Horizontal layout",
-    "zen_mode": "Zenový režim"
+    "row": "Horizontal layout"
   },
   "modal": {
     "close_unsaved_tab": "You have unsaved changes",
     "collections": "Sbírky",
     "confirm": "Potvrdit",
+    "customize_request": "Customize Request",
     "edit_request": "Upravit požadavek",
-    "import_export": "Import Export"
+    "import_export": "Import Export",
+    "share_request": "Share Request"
   },
   "mqtt": {
     "already_subscribed": "You are already subscribed to this topic.",
@@ -396,13 +521,14 @@
       "structured": "Structured",
       "text": "Text"
     },
-    "copy_link": "Kopírovat odkaz",
     "different_collection": "Cannot reorder requests from different collections",
     "duplicated": "Request duplicated",
     "duration": "Doba trvání",
     "enter_curl": "Zadejte cURL",
     "generate_code": "Vygenerujte kód",
     "generated_code": "Generovaný kód",
+    "go_to_authorization_tab": "Go to Authorization tab",
+    "go_to_body_tab": "Go to Body tab",
     "header_list": "Seznam záhlaví",
     "invalid_name": "Uveďte prosím název žádosti",
     "method": "Metoda",
@@ -419,6 +545,7 @@
     "payload": "Užitečné zatížení",
     "query": "Dotaz",
     "raw_body": "Raw Request Body",
+    "rename": "Rename Request",
     "renamed": "Žádost přejmenována",
     "run": "Běh",
     "save": "Uložit",
@@ -426,11 +553,14 @@
     "saved": "Žádost uložena",
     "share": "Podíl",
     "share_description": "Share Hoppscotch with your friends",
+    "share_request": "Share Request",
+    "stop": "Stop",
     "title": "Žádost",
     "type": "Typ požadavku",
     "url": "URL",
     "variables": "Proměnné",
-    "view_my_links": "View my links"
+    "view_my_links": "View my links",
+    "copy_link": "Kopírovat odkaz"
   },
   "response": {
     "audio": "Audio",
@@ -458,9 +588,9 @@
     "account_description": "Přizpůsobte si nastavení účtu.",
     "account_email_description": "Vaše primární e -mailová adresa.",
     "account_name_description": "Toto je vaše zobrazované jméno.",
+    "additional": "Additional Settings",
     "background": "Pozadí",
     "black_mode": "Černá",
-    "change_font_size": "Změnit velikost písma",
     "choose_language": "Vyber jazyk",
     "dark_mode": "Temný",
     "delete_account": "Delete account",
@@ -473,10 +603,6 @@
     "extensions": "Rozšíření",
     "extensions_use_toggle": "K odeslání požadavků použijte rozšíření prohlížeče (je -li k dispozici)",
     "follow": "Follow Us",
-    "font_size": "Velikost písma",
-    "font_size_large": "Velký",
-    "font_size_medium": "Střední",
-    "font_size_small": "Malý",
     "interceptor": "Interceptor",
     "interceptor_description": "Middleware mezi aplikací a API.",
     "language": "Jazyk",
@@ -509,14 +635,31 @@
     "verified_email": "Verified email",
     "verify_email": "Verify email"
   },
-  "shortcodes": {
-    "actions": "Actions",
-    "created_on": "Created on",
-    "deleted": "Shortcode deleted",
-    "method": "Method",
-    "not_found": "Shortcode not found",
-    "short_code": "Short code",
-    "url": "URL"
+  "shared_requests": {
+    "button": "Button",
+    "button_info": "Create a 'Run in Hoppscotch' button for your website, blog or a README.",
+    "copy_html": "Copy HTML",
+    "copy_link": "Copy Link",
+    "copy_markdown": "Copy Markdown",
+    "creating_widget": "Creating widget",
+    "customize": "Customize",
+    "deleted": "Shared request deleted",
+    "description": "Select a widget, you can change and customize this later",
+    "embed": "Embed",
+    "embed_info": "Add a mini 'Hoppscotch API Playground' to your website, blog or documentation.",
+    "link": "Link",
+    "link_info": "Create a shareable link to share with anyone on the internet with view access.",
+    "modified": "Shared request modified",
+    "not_found": "Shared request not found",
+    "open_new_tab": "Open in new tab",
+    "preview": "Preview",
+    "run_in_hoppscotch": "Run in Hoppscotch",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "title": "Theme"
+    }
   },
   "shortcut": {
     "general": {
@@ -541,20 +684,29 @@
       "settings": "Přejděte na stránku Nastavení",
       "title": "Navigace"
     },
+    "others": {
+      "prettify": "Prettify Editor's Content",
+      "title": "Others"
+    },
     "request": {
-      "copy_request_link": "Kopírovat požadavek na odkaz",
       "delete_method": "Vyberte metodu ODSTRANIT",
       "get_method": "Vyberte metodu ZÍSKAT",
       "head_method": "Vyberte metodu HEAD",
+      "import_curl": "Import cURL",
       "method": "Metoda",
       "next_method": "Vyberte Další metoda",
       "post_method": "Vyberte metodu POST",
       "previous_method": "Vyberte předchozí metodu",
       "put_method": "Vyberte metodu PUT",
+      "rename": "Rename Request",
       "reset_request": "Resetovat požadavek",
+      "save_request": "Save Request",
       "save_to_collections": "Uložit do sbírek",
       "send_request": "Poslat žádost",
-      "title": "Žádost"
+      "share_request": "Share Request",
+      "show_code": "Generate code snippet",
+      "title": "Žádost",
+      "copy_request_link": "Kopírovat požadavek na odkaz"
     },
     "response": {
       "copy": "Copy response to clipboard",
@@ -583,6 +735,85 @@
     "log": "Záznam",
     "url": "URL"
   },
+  "spotlight": {
+    "change_language": "Change Language",
+    "environments": {
+      "delete": "Delete current environment",
+      "duplicate": "Duplicate current environment",
+      "duplicate_global": "Duplicate global environment",
+      "edit": "Edit current environment",
+      "edit_global": "Edit global environment",
+      "new": "Create new environment",
+      "new_variable": "Create a new environment variable",
+      "title": "Environments"
+    },
+    "general": {
+      "chat": "Chat with support",
+      "help_menu": "Help and support",
+      "open_docs": "Read Documentation",
+      "open_github": "Open GitHub repository",
+      "open_keybindings": "Keyboard shortcuts",
+      "social": "Social",
+      "title": "General"
+    },
+    "graphql": {
+      "connect": "Connect to server",
+      "disconnect": "Disconnect from server"
+    },
+    "miscellaneous": {
+      "invite": "Invite your friends to Hoppscotch",
+      "title": "Miscellaneous"
+    },
+    "request": {
+      "save_as_new": "Save as new request",
+      "select_method": "Select method",
+      "switch_to": "Switch to",
+      "tab_authorization": "Authorization tab",
+      "tab_body": "Body tab",
+      "tab_headers": "Headers tab",
+      "tab_parameters": "Parameters tab",
+      "tab_pre_request_script": "Pre-request script tab",
+      "tab_query": "Query tab",
+      "tab_tests": "Tests tab",
+      "tab_variables": "Variables tab"
+    },
+    "response": {
+      "copy": "Copy response",
+      "download": "Download response as file",
+      "title": "Response"
+    },
+    "section": {
+      "interceptor": "Interceptor",
+      "interface": "Interface",
+      "theme": "Theme",
+      "user": "User"
+    },
+    "settings": {
+      "change_interceptor": "Change Interceptor",
+      "change_language": "Change Language",
+      "theme": {
+        "black": "Black",
+        "dark": "Dark",
+        "light": "Light",
+        "system": "System preference"
+      }
+    },
+    "tab": {
+      "close_current": "Close current tab",
+      "close_others": "Close all other tabs",
+      "duplicate": "Duplicate current tab",
+      "new_tab": "Open a new tab",
+      "title": "Tabs"
+    },
+    "workspace": {
+      "delete": "Delete current team",
+      "edit": "Edit current team",
+      "invite": "Invite people to team",
+      "new": "Create new team",
+      "switch_to_personal": "Switch to your personal workspace",
+      "title": "Teams"
+    }
+  },
   "sse": {
     "event_type": "Typ události",
     "log": "Záznam",
@@ -598,6 +829,7 @@
     "connection_error": "Failed to connect",
     "connection_failed": "Connection failed",
     "connection_lost": "Connection lost",
+    "copied_interface_to_clipboard": "Copied {language} interface type to clipboard",
     "copied_to_clipboard": "Zkopírováno do schránky",
     "deleted": "Smazáno",
     "deprecated": "ZASTARALÉ",
@@ -605,10 +837,12 @@
     "disconnected": "Odpojeno",
     "disconnected_from": "Odpojeno od {name}",
     "docs_generated": "Vygenerovaná dokumentace",
+    "download_failed": "Download failed",
     "download_started": "Stahování zahájeno",
     "enabled": "Povoleno",
     "file_imported": "Soubor importován",
     "finished_in": "Hotovo za {duration} ms",
+    "hide": "Hide",
     "history_deleted": "Historie odstraněna",
     "linewrap": "Zabalit linky",
     "loading": "Načítání...",
@@ -619,6 +853,7 @@
     "published_error": "Something went wrong while publishing msg: {topic} to topic: {message}",
     "published_message": "Published message: {message} to topic: {topic}",
     "reconnection_error": "Failed to reconnect",
+    "show": "Show",
     "subscribed_failed": "Failed to subscribe to topic: {topic}",
     "subscribed_success": "Successfully subscribed to topic: {topic}",
     "unsubscribed_failed": "Failed to unsubscribe from topic: {topic}",
@@ -640,8 +875,11 @@
   "tab": {
     "authorization": "Povolení",
     "body": "Tělo",
+    "close": "Close Tab",
+    "close_others": "Close other Tabs",
     "collections": "Sbírky",
     "documentation": "Dokumentace",
+    "duplicate": "Duplicate Tab",
     "environments": "Environments",
     "headers": "Záhlaví",
     "history": "Dějiny",
@@ -651,6 +889,7 @@
     "queries": "Dotazy",
     "query": "Dotaz",
     "schema": "Schema",
+    "shared_requests": "Shared Requests",
     "socketio": "Socket.IO",
     "sse": "SSE",
     "tests": "Testy",
@@ -667,6 +906,7 @@
     "email_do_not_match": "Email doesn't match with your account details. Contact your team owner.",
     "exit": "Ukončete tým",
     "exit_disabled": "Pouze vlastník nemůže opustit tým",
+    "failed_invites": "Failed invites",
     "invalid_coll_id": "Invalid collection ID",
     "invalid_email_format": "Formát e -mailu je neplatný",
     "invalid_id": "Invalid team ID. Contact your team owner.",
@@ -708,6 +948,7 @@
     "same_target_destination": "Same target and destination",
     "saved": "Tým uložen",
     "select_a_team": "Select a team",
+    "success_invites": "Success invites",
     "title": "Týmy",
     "we_sent_invite_link": "We sent an invite link to all invitees!",
     "we_sent_invite_link_description": "Ask all invitees to check their inbox. Click on the link to join the team."
@@ -739,5 +980,14 @@
     "personal": "My Workspace",
     "team": "Team Workspace",
     "title": "Workspaces"
+  },
+  "shortcodes": {
+    "actions": "Actions",
+    "created_on": "Created on",
+    "deleted": "Shortcode deleted",
+    "method": "Method",
+    "not_found": "Shortcode not found",
+    "short_code": "Short code",
+    "url": "URL"
   }
 }

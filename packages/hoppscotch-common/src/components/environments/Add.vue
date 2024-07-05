@@ -5,9 +5,9 @@
     @close="hideModal"
   >
     <template #body>
-      <div class="flex space-y-4 flex-1 flex-col">
-        <div class="flex items-center space-x-8 ml-2">
-          <label for="name" class="font-semibold min-w-10">{{
+      <div class="flex flex-1 flex-col space-y-4">
+        <div class="ml-2 flex items-center space-x-8">
+          <label for="name" class="min-w-[2.5rem] font-semibold">{{
             t("environment.name")
           }}</label>
           <input
@@ -17,32 +17,32 @@
             class="input"
           />
         </div>
-        <div class="flex items-center space-x-8 ml-2">
-          <label for="value" class="font-semibold min-w-10">{{
+        <div class="ml-2 flex items-center space-x-8">
+          <label for="value" class="min-w-[2.5rem] font-semibold">{{
             t("environment.value")
           }}</label>
-          <input
+          <SmartEnvInput
             v-model="editingValue"
             type="text"
             class="input"
             :placeholder="t('environment.value')"
           />
         </div>
-        <div class="flex items-center space-x-8 ml-2">
-          <label for="scope" class="font-semibold min-w-10">
+        <div class="ml-2 flex items-center space-x-8">
+          <label for="scope" class="min-w-[2.5rem] font-semibold">
             {{ t("environment.scope") }}
           </label>
           <div
-            class="relative flex flex-1 flex-col border border-divider rounded focus-visible:border-dividerDark"
+            class="relative flex flex-1 flex-col rounded border border-divider focus-visible:border-dividerDark"
           >
             <EnvironmentsSelector v-model="scope" :is-scope-selector="true" />
           </div>
         </div>
-        <div v-if="replaceWithVariable" class="flex space-x-2 mt-3">
-          <div class="min-w-18" />
+        <div v-if="replaceWithVariable" class="mt-3 flex space-x-2">
+          <div class="min-w-[4rem]" />
           <HoppSmartCheckbox
             :on="replaceWithVariable"
-            title="t('environment.replace_with_variable'))"
+            :title="t('environment.replace_with_variable')"
             @change="replaceWithVariable = !replaceWithVariable"
           />
           <label for="replaceWithVariable">
@@ -83,10 +83,13 @@ import {
 import * as TE from "fp-ts/TaskEither"
 import { pipe } from "fp-ts/function"
 import { updateTeamEnvironment } from "~/helpers/backend/mutations/TeamEnvironment"
-import { currentActiveTab } from "~/helpers/rest/tab"
+import { RESTTabService } from "~/services/tab/rest"
+import { useService } from "dioc/vue"
 
 const t = useI18n()
 const toast = useToast()
+
+const tabs = useService(RESTTabService)
 
 const props = defineProps<{
   show: boolean
@@ -151,12 +154,14 @@ const addEnvironment = async () => {
     addGlobalEnvVariable({
       key: editingName.value,
       value: editingValue.value,
+      secret: false,
     })
     toast.success(`${t("environment.updated")}`)
   } else if (scope.value.type === "my-environment") {
     addEnvironmentVariable(scope.value.index, {
       key: editingName.value,
       value: editingValue.value,
+      secret: false,
     })
     toast.success(`${t("environment.updated")}`)
   } else {
@@ -189,8 +194,8 @@ const addEnvironment = async () => {
     //replace the current tab endpoint with the variable name with << and >>
     const variableName = `<<${editingName.value}>>`
     //replace the currenttab endpoint containing the value in the text with variablename
-    currentActiveTab.value.document.request.endpoint =
-      currentActiveTab.value.document.request.endpoint.replace(
+    tabs.currentActiveTab.value.document.request.endpoint =
+      tabs.currentActiveTab.value.document.request.endpoint.replace(
         editingValue.value,
         variableName
       )
@@ -202,15 +207,14 @@ const addEnvironment = async () => {
 const getErrorMessage = (err: GQLError<string>) => {
   if (err.type === "network_error") {
     return t("error.network_error")
-  } else {
-    switch (err.error) {
-      case "team_environment/not_found":
-        return t("team_environment.not_found")
-      case "Forbidden resource":
-        return t("profile.no_permission")
-      default:
-        return t("error.something_went_wrong")
-    }
+  }
+  switch (err.error) {
+    case "team_environment/not_found":
+      return t("team_environment.not_found")
+    case "Forbidden resource":
+      return t("profile.no_permission")
+    default:
+      return t("error.something_went_wrong")
   }
 }
 </script>

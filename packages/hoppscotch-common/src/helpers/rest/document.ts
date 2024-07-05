@@ -1,4 +1,8 @@
 import { HoppRESTRequest } from "@hoppscotch/data"
+import { HoppRESTResponse } from "../types/HoppRESTResponse"
+import { HoppTestResult } from "../types/HoppTestResult"
+import { RESTOptionTabs } from "~/components/http/RequestOptions.vue"
+import { HoppInheritedProperty } from "../types/HoppInheritedProperties"
 
 export type HoppRESTSaveContext =
   | {
@@ -55,4 +59,32 @@ export type HoppRESTDocument = {
    * This contains where the request is originated from basically.
    */
   saveContext?: HoppRESTSaveContext
+
+  /**
+   * The response as it is in the document
+   * (if any)
+   */
+  response?: HoppRESTResponse | null
+
+  /**
+   * The test results as it is in the document
+   * (if any)
+   */
+  testResults?: HoppTestResult | null
+
+  /**
+   * Response tab preference for the current tab's document
+   */
+  responseTabPreference?: string
+
+  /**
+   * Options tab preference for the current tab's document
+   */
+  optionTabPreference?: RESTOptionTabs
+
+  /**
+   * The inherited properties from the parent collection
+   * (if any)
+   */
+  inheritedProperties?: HoppInheritedProperty
 }

@@ -1,6 +1,7 @@
 import { Team, TeamCollection as DBTeamCollection } from '@prisma/client';
-import { mock, mockDeep, mockReset } from 'jest-mock-extended';
+import { mockDeep, mockReset } from 'jest-mock-extended';
 import {
+  TEAM_COLL_DATA_INVALID,
   TEAM_COLL_DEST_SAME,
   TEAM_COLL_INVALID_JSON,
   TEAM_COLL_IS_PARENT_COLL,
@@ -11,6 +12,7 @@ import {
   TEAM_COL_REORDERING_FAILED,
   TEAM_COL_SAME_NEXT_COLL,
   TEAM_INVALID_COLL_ID,
+  TEAM_MEMBER_NOT_FOUND,
   TEAM_NOT_OWNER,
 } from 'src/errors';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -18,17 +20,18 @@ import { PubSubService } from 'src/pubsub/pubsub.service';
 import { AuthUser } from 'src/types/AuthUser';
 import { TeamCollectionService } from './team-collection.service';
 import { TeamCollection } from './team-collection.model';
-import { TeamCollectionModule } from './team-collection.module';
-import * as E from 'fp-ts/Either';
+import { TeamService } from 'src/team/team.service';
 
 const mockPrisma = mockDeep<PrismaService>();
 const mockPubSub = mockDeep<PubSubService>();
+const mockTeamService = mockDeep<TeamService>();
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const teamCollectionService = new TeamCollectionService(
   mockPrisma,
   mockPubSub as any,
+  mockTeamService,
 );
 
 const currentTime = new Date();
@@ -40,6 +43,8 @@ const user: AuthUser = {
   photoURL: 'https://en.wikipedia.org/wiki/Dwight_Schrute',
   isAdmin: false,
   refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+  lastLoggedOn: currentTime,
+  lastActiveOn: currentTime,
   createdOn: currentTime,
   currentGQLSession: {},
   currentRESTSession: {},
@@ -54,35 +59,60 @@ const rootTeamCollection: DBTeamCollection = {
   id: '123',
   orderIndex: 1,
   parentID: null,
+  data: {},
   title: 'Root Collection 1',
   teamID: team.id,
   createdOn: currentTime,
   updatedOn: currentTime,
+};
+
+const rootTeamCollectionsCasted: TeamCollection = {
+  id: rootTeamCollection.id,
+  title: rootTeamCollection.title,
+  parentID: rootTeamCollection.parentID,
+  data: JSON.stringify(rootTeamCollection.data),
 };
 
 const rootTeamCollection_2: DBTeamCollection = {
   id: 'erv',
   orderIndex: 2,
   parentID: null,
+  data: {},
   title: 'Root Collection 1',
   teamID: team.id,
   createdOn: currentTime,
   updatedOn: currentTime,
 };
 
+const rootTeamCollection_2Casted: TeamCollection = {
+  id: 'erv',
+  parentID: null,
+  data: JSON.stringify(rootTeamCollection_2.data),
+  title: 'Root Collection 1',
+};
+
 const childTeamCollection: DBTeamCollection = {
   id: 'rfe',
   orderIndex: 1,
   parentID: rootTeamCollection.id,
+  data: {},
   title: 'Child Collection 1',
   teamID: team.id,
   createdOn: currentTime,
   updatedOn: currentTime,
 };
 
+const childTeamCollectionCasted: TeamCollection = {
+  id: 'rfe',
+  parentID: rootTeamCollection.id,
+  data: JSON.stringify(childTeamCollection.data),
+  title: 'Child Collection 1',
+};
+
 const childTeamCollection_2: DBTeamCollection = {
   id: 'bgdz',
   orderIndex: 1,
+  data: {},
   parentID: rootTeamCollection_2.id,
   title: 'Child Collection 1',
   teamID: team.id,
@@ -90,11 +120,20 @@ const childTeamCollection_2: DBTeamCollection = {
   updatedOn: currentTime,
 };
 
+const childTeamCollection_2Casted: TeamCollection = {
+  id: 'bgdz',
+  data: JSON.stringify(childTeamCollection_2.data),
+  parentID: rootTeamCollection_2.id,
+  title: 'Child Collection 1',
+};
+
 const rootTeamCollectionList: DBTeamCollection[] = [
   {
     id: 'fdv',
     orderIndex: 1,
     parentID: null,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -105,6 +144,8 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 2,
     parentID: null,
     title: 'Root Collection 1',
+    data: {},
+
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -114,6 +155,8 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 3,
     parentID: null,
     title: 'Root Collection 1',
+    data: {},
+
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -122,6 +165,8 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     id: 'bre3',
     orderIndex: 4,
     parentID: null,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -132,6 +177,8 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 5,
     parentID: null,
     title: 'Root Collection 1',
+    data: {},
+
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -142,6 +189,8 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     parentID: null,
     title: 'Root Collection 1',
     teamID: team.id,
+    data: {},
+
     createdOn: currentTime,
     updatedOn: currentTime,
   },
@@ -151,6 +200,8 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     parentID: null,
     title: 'Root Collection 1',
     teamID: team.id,
+    data: {},
+
     createdOn: currentTime,
     updatedOn: currentTime,
   },
@@ -159,6 +210,7 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 8,
     parentID: null,
     title: 'Root Collection 1',
+    data: {},
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -168,6 +220,7 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 9,
     parentID: null,
     title: 'Root Collection 1',
+    data: {},
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -178,8 +231,72 @@ const rootTeamCollectionList: DBTeamCollection[] = [
     parentID: null,
     title: 'Root Collection 1',
     teamID: team.id,
+    data: {},
     createdOn: currentTime,
     updatedOn: currentTime,
+  },
+];
+
+const rootTeamCollectionListCasted: TeamCollection[] = [
+  {
+    id: 'fdv',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: 'fbbg',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: 'fgbfg',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: 'bre3',
+    parentID: null,
+    data: JSON.stringify(rootTeamCollection.data),
+    title: 'Root Collection 1',
+  },
+  {
+    id: 'hghgf',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: '123',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: '54tyh',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: '234re',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: '34rtg',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
+  },
+  {
+    id: '45tgh',
+    parentID: null,
+    title: 'Root Collection 1',
+    data: JSON.stringify(rootTeamCollection.data),
   },
 ];
 
@@ -189,6 +306,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 1,
     parentID: rootTeamCollection.id,
     title: 'Root Collection 1',
+    data: {},
+
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -198,6 +317,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 2,
     parentID: rootTeamCollection.id,
     title: 'Root Collection 1',
+    data: {},
+
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -207,6 +328,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     orderIndex: 3,
     parentID: rootTeamCollection.id,
     title: 'Root Collection 1',
+    data: {},
+
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
@@ -215,6 +338,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '567',
     orderIndex: 4,
     parentID: rootTeamCollection.id,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -224,6 +349,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '123',
     orderIndex: 5,
     parentID: rootTeamCollection.id,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -233,6 +360,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '678',
     orderIndex: 6,
     parentID: rootTeamCollection.id,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -242,6 +371,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '789',
     orderIndex: 7,
     parentID: rootTeamCollection.id,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -251,6 +382,8 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '890',
     orderIndex: 8,
     parentID: rootTeamCollection.id,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -260,6 +393,7 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '012',
     orderIndex: 9,
     parentID: rootTeamCollection.id,
+    data: {},
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
@@ -269,10 +403,81 @@ const childTeamCollectionList: DBTeamCollection[] = [
     id: '0bhu',
     orderIndex: 10,
     parentID: rootTeamCollection.id,
+    data: {},
+
     title: 'Root Collection 1',
     teamID: team.id,
     createdOn: currentTime,
     updatedOn: currentTime,
+  },
+];
+
+const childTeamCollectionListCasted: TeamCollection[] = [
+  {
+    id: '123',
+    parentID: rootTeamCollection.id,
+    title: 'Root Collection 1',
+    data: JSON.stringify({}),
+  },
+  {
+    id: '345',
+    parentID: rootTeamCollection.id,
+    title: 'Root Collection 1',
+    data: JSON.stringify({}),
+  },
+  {
+    id: '456',
+    parentID: rootTeamCollection.id,
+    title: 'Root Collection 1',
+    data: JSON.stringify({}),
+  },
+  {
+    id: '567',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+
+    title: 'Root Collection 1',
+  },
+  {
+    id: '123',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+
+    title: 'Root Collection 1',
+  },
+  {
+    id: '678',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+
+    title: 'Root Collection 1',
+  },
+  {
+    id: '789',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+
+    title: 'Root Collection 1',
+  },
+  {
+    id: '890',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+
+    title: 'Root Collection 1',
+  },
+  {
+    id: '012',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+    title: 'Root Collection 1',
+  },
+  {
+    id: '0bhu',
+    parentID: rootTeamCollection.id,
+    data: JSON.stringify({}),
+
+    title: 'Root Collection 1',
   },
 ];
 
@@ -314,7 +519,7 @@ describe('getParentOfCollection', () => {
     const result = await teamCollectionService.getParentOfCollection(
       childTeamCollection.id,
     );
-    expect(result).toEqual(rootTeamCollection);
+    expect(result).toEqual(rootTeamCollectionsCasted);
   });
 
   test('should return null successfully for a root collection with valid collectionID', async () => {
@@ -350,7 +555,7 @@ describe('getChildrenOfCollection', () => {
       null,
       10,
     );
-    expect(result).toEqual(childTeamCollectionList);
+    expect(result).toEqual(childTeamCollectionListCasted);
   });
 
   test('should return a list of 3 child collections successfully with cursor being equal to the 7th item in the list', async () => {
@@ -366,9 +571,9 @@ describe('getChildrenOfCollection', () => {
       10,
     );
     expect(result).toEqual([
-      { ...childTeamCollectionList[7] },
-      { ...childTeamCollectionList[8] },
-      { ...childTeamCollectionList[9] },
+      { ...childTeamCollectionListCasted[7] },
+      { ...childTeamCollectionListCasted[8] },
+      { ...childTeamCollectionListCasted[9] },
     ]);
   });
 
@@ -395,7 +600,7 @@ describe('getTeamRootCollections', () => {
       null,
       10,
     );
-    expect(result).toEqual(rootTeamCollectionList);
+    expect(result).toEqual(rootTeamCollectionListCasted);
   });
 
   test('should return a list of 3 root collections successfully with cursor being equal to the 7th item in the list', async () => {
@@ -411,9 +616,9 @@ describe('getTeamRootCollections', () => {
       10,
     );
     expect(result).toEqual([
-      { ...rootTeamCollectionList[7] },
-      { ...rootTeamCollectionList[8] },
-      { ...rootTeamCollectionList[9] },
+      { ...rootTeamCollectionListCasted[7] },
+      { ...rootTeamCollectionListCasted[8] },
+      { ...rootTeamCollectionListCasted[9] },
     ]);
   });
 
@@ -467,6 +672,7 @@ describe('createCollection', () => {
     const result = await teamCollectionService.createCollection(
       rootTeamCollection.teamID,
       'ab',
+      JSON.stringify(rootTeamCollection.data),
       rootTeamCollection.id,
     );
     expect(result).toEqualLeft(TEAM_COLL_SHORT_TITLE);
@@ -481,9 +687,25 @@ describe('createCollection', () => {
     const result = await teamCollectionService.createCollection(
       rootTeamCollection.teamID,
       'abcd',
+      JSON.stringify(rootTeamCollection.data),
       rootTeamCollection.id,
     );
     expect(result).toEqualLeft(TEAM_NOT_OWNER);
+  });
+
+  test('should throw TEAM_COLL_DATA_INVALID when parent TeamCollection does not belong to the team', async () => {
+    // isOwnerCheck
+    mockPrisma.teamCollection.findFirstOrThrow.mockResolvedValueOnce(
+      rootTeamCollection,
+    );
+
+    const result = await teamCollectionService.createCollection(
+      rootTeamCollection.teamID,
+      'abcd',
+      '{',
+      rootTeamCollection.id,
+    );
+    expect(result).toEqualLeft(TEAM_COLL_DATA_INVALID);
   });
 
   test('should successfully create a new root TeamCollection with valid inputs', async () => {
@@ -499,9 +721,10 @@ describe('createCollection', () => {
     const result = await teamCollectionService.createCollection(
       rootTeamCollection.teamID,
       'abcdefg',
+      JSON.stringify(rootTeamCollection.data),
       rootTeamCollection.id,
     );
-    expect(result).toEqualRight(rootTeamCollection);
+    expect(result).toEqualRight(rootTeamCollectionsCasted);
   });
 
   test('should successfully create a new child TeamCollection with valid inputs', async () => {
@@ -517,9 +740,10 @@ describe('createCollection', () => {
     const result = await teamCollectionService.createCollection(
       childTeamCollection.teamID,
       childTeamCollection.title,
+      JSON.stringify(rootTeamCollection.data),
       rootTeamCollection.id,
     );
-    expect(result).toEqualRight(childTeamCollection);
+    expect(result).toEqualRight(childTeamCollectionCasted);
   });
 
   test('should send pubsub message to "team_coll/<teamID>/coll_added" if child TeamCollection is created successfully', async () => {
@@ -535,11 +759,13 @@ describe('createCollection', () => {
     const result = await teamCollectionService.createCollection(
       childTeamCollection.teamID,
       childTeamCollection.title,
+      JSON.stringify(rootTeamCollection.data),
+
       rootTeamCollection.id,
     );
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${childTeamCollection.teamID}/coll_added`,
-      childTeamCollection,
+      childTeamCollectionCasted,
     );
   });
 
@@ -556,11 +782,13 @@ describe('createCollection', () => {
     const result = await teamCollectionService.createCollection(
       rootTeamCollection.teamID,
       'abcdefg',
+      JSON.stringify(rootTeamCollection.data),
+
       rootTeamCollection.id,
     );
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${rootTeamCollection.teamID}/coll_added`,
-      rootTeamCollection,
+      rootTeamCollectionsCasted,
     );
   });
 });
@@ -590,7 +818,7 @@ describe('renameCollection', () => {
       'NewTitle',
     );
     expect(result).toEqualRight({
-      ...rootTeamCollection,
+      ...rootTeamCollectionsCasted,
       title: 'NewTitle',
     });
   });
@@ -628,7 +856,7 @@ describe('renameCollection', () => {
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${rootTeamCollection.teamID}/coll_updated`,
       {
-        ...rootTeamCollection,
+        ...rootTeamCollectionsCasted,
         title: 'NewTitle',
       },
     );
@@ -835,9 +1063,8 @@ describe('moveCollection', () => {
       null,
     );
     expect(result).toEqualRight({
-      ...childTeamCollection,
+      ...childTeamCollectionCasted,
       parentID: null,
-      orderIndex: 2,
     });
   });
 
@@ -893,9 +1120,8 @@ describe('moveCollection', () => {
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${childTeamCollection.teamID}/coll_moved`,
       {
-        ...childTeamCollection,
+        ...childTeamCollectionCasted,
         parentID: null,
-        orderIndex: 2,
       },
     );
   });
@@ -934,9 +1160,8 @@ describe('moveCollection', () => {
       childTeamCollection_2.id,
     );
     expect(result).toEqualRight({
-      ...rootTeamCollection,
-      parentID: childTeamCollection_2.id,
-      orderIndex: 1,
+      ...rootTeamCollectionsCasted,
+      parentID: childTeamCollection_2Casted.id,
     });
   });
 
@@ -976,9 +1201,8 @@ describe('moveCollection', () => {
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${childTeamCollection_2.teamID}/coll_moved`,
       {
-        ...rootTeamCollection,
-        parentID: childTeamCollection_2.id,
-        orderIndex: 1,
+        ...rootTeamCollectionsCasted,
+        parentID: childTeamCollection_2Casted.id,
       },
     );
   });
@@ -1017,9 +1241,8 @@ describe('moveCollection', () => {
       childTeamCollection_2.id,
     );
     expect(result).toEqualRight({
-      ...childTeamCollection,
-      parentID: childTeamCollection_2.id,
-      orderIndex: 1,
+      ...childTeamCollectionCasted,
+      parentID: childTeamCollection_2Casted.id,
     });
   });
 
@@ -1059,9 +1282,8 @@ describe('moveCollection', () => {
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${childTeamCollection.teamID}/coll_moved`,
       {
-        ...childTeamCollection,
-        parentID: childTeamCollection_2.id,
-        orderIndex: 1,
+        ...childTeamCollectionCasted,
+        parentID: childTeamCollection_2Casted.id,
       },
     );
   });
@@ -1157,7 +1379,7 @@ describe('updateCollectionOrder', () => {
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${childTeamCollectionList[4].teamID}/coll_order_updated`,
       {
-        collection: rootTeamCollectionList[4],
+        collection: rootTeamCollectionListCasted[4],
         nextCollection: null,
       },
     );
@@ -1238,8 +1460,8 @@ describe('updateCollectionOrder', () => {
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${childTeamCollectionList[2].teamID}/coll_order_updated`,
       {
-        collection: childTeamCollectionList[4],
-        nextCollection: childTeamCollectionList[2],
+        collection: childTeamCollectionListCasted[4],
+        nextCollection: childTeamCollectionListCasted[2],
       },
     );
   });
@@ -1305,7 +1527,7 @@ describe('importCollectionsFromJSON', () => {
     );
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${rootTeamCollection.teamID}/coll_added`,
-      rootTeamCollection,
+      rootTeamCollectionsCasted,
     );
   });
 });
@@ -1424,7 +1646,7 @@ describe('replaceCollectionsWithJSON', () => {
     );
     expect(mockPubSub.publish).toHaveBeenCalledWith(
       `team_coll/${rootTeamCollection.teamID}/coll_added`,
-      rootTeamCollection,
+      rootTeamCollectionsCasted,
     );
   });
 });
@@ -1461,4 +1683,124 @@ describe('totalCollectionsInTeam', () => {
   });
 });
 
+describe('updateTeamCollection', () => {
+  test('should throw TEAM_COLL_SHORT_TITLE if title is invalid', async () => {
+    const result = await teamCollectionService.updateTeamCollection(
+      rootTeamCollection.id,
+      JSON.stringify(rootTeamCollection.data),
+      'de',
+    );
+    expect(result).toEqualLeft(TEAM_COLL_SHORT_TITLE);
+  });
+
+  test('should throw TEAM_COLL_DATA_INVALID is collection data is invalid', async () => {
+    const result = await teamCollectionService.updateTeamCollection(
+      rootTeamCollection.id,
+      '{',
+      rootTeamCollection.title,
+    );
+    expect(result).toEqualLeft(TEAM_COLL_DATA_INVALID);
+  });
+
+  test('should throw TEAM_COLL_NOT_FOUND is collectionID is invalid', async () => {
+    mockPrisma.teamCollection.update.mockRejectedValueOnce('RecordNotFound');
+
+    const result = await teamCollectionService.updateTeamCollection(
+      'invalid_id',
+      JSON.stringify(rootTeamCollection.data),
+      rootTeamCollection.title,
+    );
+    expect(result).toEqualLeft(TEAM_COLL_NOT_FOUND);
+  });
+
+  test('should successfully update a collection', async () => {
+    mockPrisma.teamCollection.update.mockResolvedValueOnce(rootTeamCollection);
+
+    const result = await teamCollectionService.updateTeamCollection(
+      rootTeamCollection.id,
+      JSON.stringify({ foo: 'bar' }),
+      'new_title',
+    );
+    expect(result).toEqualRight({
+      data: JSON.stringify({ foo: 'bar' }),
+      title: 'new_title',
+      ...rootTeamCollectionsCasted,
+    });
+  });
+
+  test('should send pubsub message to "team_coll/<teamID>/coll_updated" if TeamCollection is updated successfully', async () => {
+    mockPrisma.teamCollection.update.mockResolvedValueOnce(rootTeamCollection);
+
+    const result = await teamCollectionService.updateTeamCollection(
+      rootTeamCollection.id,
+      JSON.stringify(rootTeamCollection.data),
+      rootTeamCollection.title,
+    );
+    expect(mockPubSub.publish).toHaveBeenCalledWith(
+      `team_coll/${rootTeamCollection.teamID}/coll_updated`,
+      rootTeamCollectionsCasted,
+    );
+  });
+});
+
 //ToDo: write test cases for exportCollectionsToJSON
+
+describe('getCollectionForCLI', () => {
+  test('should throw TEAM_COLL_NOT_FOUND if collectionID is invalid', async () => {
+    mockPrisma.teamCollection.findUniqueOrThrow.mockRejectedValueOnce(
+      'NotFoundError',
+    );
+
+    const result = await teamCollectionService.getCollectionForCLI(
+      'invalidID',
+      user.uid,
+    );
+    expect(result).toEqualLeft(TEAM_COLL_NOT_FOUND);
+  });
+
+  test('should throw TEAM_MEMBER_NOT_FOUND if user not in same team', async () => {
+    mockPrisma.teamCollection.findUniqueOrThrow.mockResolvedValueOnce(
+      rootTeamCollection,
+    );
+    mockTeamService.getTeamMember.mockResolvedValue(null);
+
+    const result = await teamCollectionService.getCollectionForCLI(
+      rootTeamCollection.id,
+      user.uid,
+    );
+    expect(result).toEqualLeft(TEAM_MEMBER_NOT_FOUND);
+  });
+
+  // test('should return the TeamCollection data for CLI', async () => {
+  //   mockPrisma.teamCollection.findUniqueOrThrow.mockResolvedValueOnce(
+  //     rootTeamCollection,
+  //   );
+  //   mockTeamService.getTeamMember.mockResolvedValue({
+  //     membershipID: 'sdc3sfdv',
+  //     userUid: user.uid,
+  //     role: TeamMemberRole.OWNER,
+  //   });
+
+  //   const result = await teamCollectionService.getCollectionForCLI(
+  //     rootTeamCollection.id,
+  //     user.uid,
+  //   );
+  //   expect(result).toEqualRight({
+  //     id: rootTeamCollection.id,
+  //     data: JSON.stringify(rootTeamCollection.data),
+  //     title: rootTeamCollection.title,
+  //     parentID: rootTeamCollection.parentID,
+  //     folders: [
+  //       {
+  //         id: childTeamCollection.id,
+  //         data: JSON.stringify(childTeamCollection.data),
+  //         title: childTeamCollection.title,
+  //         parentID: childTeamCollection.parentID,
+  //         folders: [],
+  //         requests: [],
+  //       },
+  //     ],
+  //     requests: [],
+  //   });
+  // });
+});

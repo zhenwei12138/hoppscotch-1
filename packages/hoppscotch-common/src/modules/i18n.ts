@@ -1,14 +1,15 @@
-import * as R from "fp-ts/Record"
 import * as A from "fp-ts/Array"
-import * as O from "fp-ts/Option"
 import { pipe } from "fp-ts/function"
+import * as O from "fp-ts/Option"
+import * as R from "fp-ts/Record"
 import { createI18n, I18n, I18nOptions } from "vue-i18n"
 import { HoppModule } from "."
 
 import languages from "../../languages.json"
 
 import { throwError } from "~/helpers/functional/error"
-import { getLocalConfig, setLocalConfig } from "~/newstore/localpersistence"
+import { PersistenceService } from "~/services/persistence"
+import { getService } from "./dioc"
 
 /*
   In context of this file, we have 2 main kinds of things.
@@ -44,6 +45,8 @@ type LanguagesDef = {
 
 const FALLBACK_LANG_CODE = "en"
 
+const persistenceService = getService(PersistenceService)
+
 // TypeScript cannot understand dir is restricted to "ltr" or "rtl" yet, hence assertion
 export const APP_LANGUAGES: LanguagesDef[] = languages as LanguagesDef[]
 
@@ -58,12 +61,18 @@ export const FALLBACK_LANG = pipe(
 )
 
 // A reference to the i18n instance
-let i18nInstance: I18n<any, any, any> | null = null
+let i18nInstance: I18n<
+  Record<string, unknown>,
+  Record<string, unknown>,
+  Record<string, unknown>,
+  string,
+  true
+> | null = null
 
 const resolveCurrentLocale = () =>
   pipe(
     // Resolve from locale and make sure it is in languages
-    getLocalConfig("locale"),
+    persistenceService.getLocalConfig("locale"),
     O.fromNullable,
     O.filter((locale) =>
       pipe(
@@ -112,14 +121,13 @@ export const changeAppLanguage = async (locale: string) => {
   // TODO: Look into the type issues here
   i18nInstance.global.locale.value = locale
 
-  setLocalConfig("locale", locale)
+  persistenceService.setLocalConfig("locale", locale)
 }
 
 /**
  * Returns the i18n instance
  */
 export function getI18n() {
-  // @ts-expect-error Something weird with the i18n errors
   return i18nInstance!.global.t
 }
 
@@ -140,7 +148,7 @@ export default <HoppModule>{
     const currentLocale = resolveCurrentLocale()
     changeAppLanguage(currentLocale)
 
-    setLocalConfig("locale", currentLocale)
+    persistenceService.setLocalConfig("locale", currentLocale)
   },
   onBeforeRouteChange(to, _, router) {
     // Convert old locale path format to new format

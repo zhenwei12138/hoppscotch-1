@@ -1,8 +1,48 @@
+import { Environment, HoppCollection, HoppRESTRequest } from "@hoppscotch/data";
 import fs from "fs/promises";
-import { FormDataEntry } from "../types/request";
+import { entityReference } from "verzod";
+import { z } from "zod";
+
+import { TestCmdCollectionOptions } from "../types/commands";
 import { error } from "../types/errors";
-import { isRESTCollection, isHoppErrnoException } from "./checks";
-import { HoppCollection, HoppRESTRequest } from "@hoppscotch/data";
+import { FormDataEntry } from "../types/request";
+import { isHoppErrnoException } from "./checks";
+import { getResourceContents } from "./getters";
+
+const getValidRequests = (
+  collections: HoppCollection[],
+  collectionFilePath: string
+) => {
+  return collections.map((collection) => {
+    // Validate requests using zod schema
+    const requestSchemaParsedResult = z
+      .array(entityReference(HoppRESTRequest))
+      .safeParse(collection.requests);
+
+    // Handle validation errors
+    if (!requestSchemaParsedResult.success) {
+      throw error({
+        code: "MALFORMED_COLLECTION",
+        path: collectionFilePath,
+        data: "Please check the collection data.",
+      });
+    }
+
+    // Recursively validate requests in nested folders
+    if (collection.folders.length > 0) {
+      collection.folders = getValidRequests(
+        collection.folders,
+        collectionFilePath
+      );
+    }
+
+    // Return validated collection
+    return {
+      ...collection,
+      requests: requestSchemaParsedResult.data,
+    };
+  });
+};
 
 /**
  * Parses array of FormDataEntry to FormData.
@@ -34,44 +74,73 @@ export const parseErrorMessage = (e: unknown) => {
   return msg.replace(/\n+$|\s{2,}/g, "").trim();
 };
 
-export async function readJsonFile(path: string): Promise<unknown> {
-  if(!path.endsWith('.json')) {
-    throw error({ code: "INVALID_FILE_TYPE", data: path })
+/**
+ * Reads a JSON file from the specified path and returns the parsed content.
+ *
+ * @param {string} path - The path to the JSON file.
+ * @param {boolean} fileExistsInPath - Indicates whether the file exists in the specified path.
+ * @returns {Promise<unknown>} A Promise that resolves to the parsed JSON contents.
+ * @throws {Error} If the file path does not end with `.json`.
+ * @throws {Error} If the file does not exist in the specified path.
+ * @throws {Error} If an unknown error occurs while reading or parsing the file.
+ */
+export async function readJsonFile(
+  path: string,
+  fileExistsInPath: boolean
+): Promise<unknown> {
+  if (!path.endsWith(".json")) {
+    throw error({ code: "INVALID_FILE_TYPE", data: path });
+  }
+
+  if (!fileExistsInPath) {
+    throw error({ code: "FILE_NOT_FOUND", path });
   }
 
   try {
-    await fs.access(path)
+    return JSON.parse((await fs.readFile(path)).toString());
   } catch (e) {
-    throw error({ code: "FILE_NOT_FOUND", path: path })
-  }
-
-  try {
-    return JSON.parse((await fs.readFile(path)).toString())
-  } catch(e) {
-    throw error({ code: "UNKNOWN_ERROR", data: e })
+    throw error({ code: "UNKNOWN_ERROR", data: e });
   }
 }
 
 /**
- * Parses collection json file for given path:context.path, and validates
- * the parsed collectiona array.
- * @param path Collection json file path.
- * @returns For successful parsing we get array of HoppCollection<HoppRESTRequest>,
+ * Parses collection data from a given path or ID and returns the data conforming to the latest version of the `HoppCollection` schema.
+ *
+ * @param pathOrId Collection JSON file path/ID from a workspace.
+ * @param {TestCmdCollectionOptions} options Supplied values for CLI flags.
+ * @param {string} [options.token] Personal access token to fetch workspace environments.
+ * @param {string} [options.server] server URL for SH instance.
+ * @returns {Promise<HoppCollection[]>} A promise that resolves to an array of HoppCollection objects.
+ * @throws Throws an error if the collection data is malformed.
  */
 export async function parseCollectionData(
-  path: string
-): Promise<HoppCollection<HoppRESTRequest>[]> {
-  let contents = await readJsonFile(path)
+  pathOrId: string,
+  options: TestCmdCollectionOptions
+): Promise<HoppCollection[]> {
+  const { token: accessToken, server: serverUrl } = options;
 
-  const maybeArrayOfCollections: unknown[] = Array.isArray(contents) ? contents : [contents]
+  const contents = await getResourceContents({
+    pathOrId,
+    accessToken,
+    serverUrl,
+    resourceType: "collection",
+  });
 
-  if(maybeArrayOfCollections.some((x) => !isRESTCollection(x))) {
+  const maybeArrayOfCollections: unknown[] = Array.isArray(contents)
+    ? contents
+    : [contents];
+
+  const collectionSchemaParsedResult = z
+    .array(entityReference(HoppCollection))
+    .safeParse(maybeArrayOfCollections);
+
+  if (!collectionSchemaParsedResult.success) {
     throw error({
       code: "MALFORMED_COLLECTION",
-      path,
+      path: pathOrId,
       data: "Please check the collection data.",
-    })
+    });
   }
 
-  return maybeArrayOfCollections as HoppCollection<HoppRESTRequest>[]
-};
+  return getValidRequests(collectionSchemaParsedResult.data, pathOrId);
+}

@@ -16,6 +16,22 @@ export type NetworkResponse = AxiosResponse<unknown> & {
       endTime: number
     }
   }
+  /**
+   * Optional additional fields with special optional metadata that can be used
+   */
+  additional?: {
+    /**
+     * By the HTTP spec, we can have multiple headers with the same name, but
+     * this is not accessible in the AxiosResponse type as the headers there are Record<string, string>
+     * (and hence cannot have secondary values).
+     *
+     * If this value is present, headers can be read from here which will have the data.
+     */
+    multiHeaders?: Array<{
+      key: string
+      value: string
+    }>
+  }
 }
 
 /**
@@ -29,6 +45,7 @@ export type InterceptorError =
         description: (t: ReturnType<typeof getI18n>) => string
       }
       error?: unknown
+      component?: Component
     }
 
 /**
@@ -84,6 +101,12 @@ export type Interceptor<Err extends InterceptorError = InterceptorError> = {
    * @param t The i18n function.
    */
   name: (t: ReturnType<typeof getI18n>) => MaybeRef<string>
+
+  /**
+   * Defines whether the interceptor has support for cookies.
+   * If this field is undefined, it is assumed as not supporting cookies.
+   */
+  supportsCookies?: boolean
 
   /**
    * Defines what to render in the Interceptor section of the Settings page.
@@ -161,9 +184,17 @@ export class InterceptorService extends Service {
     Array.from(this.interceptors.values())
   )
 
-  constructor() {
-    super()
+  /**
+   * Gives an instance to the current interceptor.
+   *  NOTE: Do not update from here, this is only for reading.
+   */
+  public currentInterceptor = computed(() => {
+    if (this.currentInterceptorID.value === null) return null
 
+    return this.interceptors.get(this.currentInterceptorID.value)
+  })
+
+  override onServiceInit() {
     // If the current interceptor is unselectable, select the first selectable one, else null
     watch([() => this.interceptors, this.currentInterceptorID], () => {
       if (!this.currentInterceptorID.value) return

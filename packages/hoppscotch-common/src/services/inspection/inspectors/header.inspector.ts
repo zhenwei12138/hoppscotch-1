@@ -4,6 +4,7 @@ import { getI18n } from "~/modules/i18n"
 import { HoppRESTRequest } from "@hoppscotch/data"
 import { Ref, computed, markRaw } from "vue"
 import IconAlertTriangle from "~icons/lucide/alert-triangle"
+import { InterceptorService } from "~/services/interceptor.service"
 
 /**
  * This inspector is responsible for inspecting the header of a request.
@@ -19,10 +20,9 @@ export class HeaderInspectorService extends Service implements Inspector {
   public readonly inspectorID = "header"
 
   private readonly inspection = this.bind(InspectionService)
+  private readonly interceptorService = this.bind(InterceptorService)
 
-  constructor() {
-    super()
-
+  override onServiceInit() {
     this.inspection.registerInspector(this)
   }
 
@@ -42,7 +42,10 @@ export class HeaderInspectorService extends Service implements Inspector {
 
       const isContainCookies = headerKeys.includes("Cookie")
 
-      if (isContainCookies) {
+      if (
+        isContainCookies &&
+        !this.interceptorService.currentInterceptor.value?.supportsCookies
+      ) {
         headerKeys.forEach((headerKey, index) => {
           if (this.cookiesCheck(headerKey)) {
             results.push({
@@ -61,8 +64,8 @@ export class HeaderInspectorService extends Service implements Inspector {
                 index: index,
               },
               doc: {
-                text: this.t("action.learn_more"),
-                link: "https://docs.hoppscotch.io/",
+                text: this.t("action.download_here"),
+                link: "https://hoppscotch.com/download",
               },
             })
           }

@@ -21,20 +21,19 @@ import {
   StaticSpotlightSearcherService,
 } from "./base/static.searcher"
 
-import { Service } from "dioc"
+import { Container, Service } from "dioc"
 import * as E from "fp-ts/Either"
 import MiniSearch from "minisearch"
 import IconCheckCircle from "~/components/app/spotlight/entry/IconSelected.vue"
-import { useStreamStatic } from "~/composables/stream"
 import { runGQLQuery } from "~/helpers/backend/GQLClient"
 import { GetMyTeamsDocument, GetMyTeamsQuery } from "~/helpers/backend/graphql"
-import { workspaceStatus$ } from "~/newstore/workspace"
 import { platform } from "~/platform"
 import IconEdit from "~icons/lucide/edit"
 import IconTrash2 from "~icons/lucide/trash-2"
 import IconUser from "~icons/lucide/user"
 import IconUserPlus from "~icons/lucide/user-plus"
 import IconUsers from "~icons/lucide/users"
+import { WorkspaceService } from "~/services/workspace.service"
 
 type Doc = {
   text: string | string[]
@@ -58,14 +57,9 @@ export class WorkspaceSpotlightSearcherService extends StaticSpotlightSearcherSe
   public searcherSectionTitle = this.t("spotlight.workspace.title")
 
   private readonly spotlight = this.bind(SpotlightService)
+  private readonly workspaceService = this.bind(WorkspaceService)
 
-  private workspace = useStreamStatic(
-    workspaceStatus$,
-    { type: "personal" },
-    () => {
-      /* noop */
-    }
-  )[0]
+  private workspace = this.workspaceService.currentWorkspace
 
   private isTeamSelected = computed(
     () =>
@@ -108,15 +102,18 @@ export class WorkspaceSpotlightSearcherService extends StaticSpotlightSearcherSe
     },
   })
 
-  constructor() {
-    super({
+  // TODO: Constructors are no longer recommended as of dioc > 3, move to onServiceInit
+  constructor(c: Container) {
+    super(c, {
       searchFields: ["text", "alternates"],
       fieldWeights: {
         text: 2,
         alternates: 1,
       },
     })
+  }
 
+  override onServiceInit() {
     this.setDocuments(this.documents)
     this.spotlight.registerSearcher(this)
   }
@@ -170,10 +167,9 @@ export class SwitchWorkspaceSpotlightSearcherService
   public searcherSectionTitle = this.t("workspace.title")
 
   private readonly spotlight = this.bind(SpotlightService)
+  private readonly workspaceService = this.bind(WorkspaceService)
 
-  constructor() {
-    super()
-
+  override onServiceInit() {
     this.spotlight.registerSearcher(this)
   }
 
@@ -197,13 +193,7 @@ export class SwitchWorkspaceSpotlightSearcherService
     })
   }
 
-  private workspace = useStreamStatic(
-    workspaceStatus$,
-    { type: "personal" },
-    () => {
-      /* noop */
-    }
-  )[0]
+  private workspace = this.workspaceService.currentWorkspace
 
   createSearchSession(
     query: Readonly<Ref<string>>

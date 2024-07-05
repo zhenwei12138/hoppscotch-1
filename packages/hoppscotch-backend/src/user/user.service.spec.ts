@@ -1,4 +1,9 @@
-import { JSON_INVALID, USER_NOT_FOUND } from 'src/errors';
+import {
+  JSON_INVALID,
+  USERS_NOT_FOUND,
+  USER_NOT_FOUND,
+  USER_SHORT_DISPLAY_NAME,
+} from 'src/errors';
 import { mockDeep, mockReset } from 'jest-mock-extended';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthUser } from 'src/types/AuthUser';
@@ -37,6 +42,8 @@ const user: AuthUser = {
   currentRESTSession: {},
   currentGQLSession: {},
   refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+  lastLoggedOn: currentTime,
+  lastActiveOn: currentTime,
   createdOn: currentTime,
 };
 
@@ -49,6 +56,8 @@ const adminUser: AuthUser = {
   currentRESTSession: {},
   currentGQLSession: {},
   refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+  lastLoggedOn: currentTime,
+  lastActiveOn: currentTime,
   createdOn: currentTime,
 };
 
@@ -62,6 +71,8 @@ const users: AuthUser[] = [
     currentRESTSession: {},
     currentGQLSession: {},
     refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+    lastLoggedOn: currentTime,
+    lastActiveOn: currentTime,
     createdOn: currentTime,
   },
   {
@@ -73,6 +84,8 @@ const users: AuthUser[] = [
     currentRESTSession: {},
     currentGQLSession: {},
     refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+    lastLoggedOn: currentTime,
+    lastActiveOn: currentTime,
     createdOn: currentTime,
   },
   {
@@ -84,6 +97,8 @@ const users: AuthUser[] = [
     currentRESTSession: {},
     currentGQLSession: {},
     refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+    lastLoggedOn: currentTime,
+    lastActiveOn: currentTime,
     createdOn: currentTime,
   },
 ];
@@ -98,6 +113,8 @@ const adminUsers: AuthUser[] = [
     currentRESTSession: {},
     currentGQLSession: {},
     refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+    lastLoggedOn: currentTime,
+    lastActiveOn: currentTime,
     createdOn: currentTime,
   },
   {
@@ -109,6 +126,8 @@ const adminUsers: AuthUser[] = [
     currentRESTSession: {},
     currentGQLSession: {},
     refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+    lastLoggedOn: currentTime,
+    lastActiveOn: currentTime,
     createdOn: currentTime,
   },
   {
@@ -120,6 +139,8 @@ const adminUsers: AuthUser[] = [
     currentRESTSession: {},
     currentGQLSession: {},
     refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+    lastLoggedOn: currentTime,
+    lastActiveOn: currentTime,
     createdOn: currentTime,
   },
 ];
@@ -144,7 +165,7 @@ beforeEach(() => {
 describe('UserService', () => {
   describe('findUserByEmail', () => {
     test('should successfully return a valid user given a valid email', async () => {
-      mockPrisma.user.findUniqueOrThrow.mockResolvedValueOnce(user);
+      mockPrisma.user.findFirst.mockResolvedValueOnce(user);
 
       const result = await userService.findUserByEmail(
         'dwight@dundermifflin.com',
@@ -153,7 +174,7 @@ describe('UserService', () => {
     });
 
     test('should return a null user given a invalid email', async () => {
-      mockPrisma.user.findUniqueOrThrow.mockRejectedValueOnce('NotFoundError');
+      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
 
       const result = await userService.findUserByEmail('jim@dundermifflin.com');
       expect(result).resolves.toBeNone;
@@ -173,6 +194,26 @@ describe('UserService', () => {
 
       const result = await userService.findUserById('sdcvbdbr');
       expect(result).resolves.toBeNone;
+    });
+  });
+
+  describe('findUsersByIds', () => {
+    test('should successfully return users given valid user UIDs', async () => {
+      mockPrisma.user.findMany.mockResolvedValueOnce(users);
+
+      const result = await userService.findUsersByIds([
+        '123344',
+        '5555',
+        '6666',
+      ]);
+      expect(result).toEqual(users);
+    });
+
+    test('should return empty array of users given a invalid user UIDs', async () => {
+      mockPrisma.user.findMany.mockResolvedValueOnce([]);
+
+      const result = await userService.findUsersByIds(['sdcvbdbr']);
+      expect(result).toEqual([]);
     });
   });
 
@@ -414,6 +455,82 @@ describe('UserService', () => {
     });
   });
 
+  describe('updateUserDisplayName', () => {
+    test('should resolve right and update user display name', async () => {
+      const newDisplayName = 'New Name';
+      mockPrisma.user.update.mockResolvedValueOnce({
+        ...user,
+        displayName: newDisplayName,
+      });
+
+      const result = await userService.updateUserDisplayName(
+        user.uid,
+        newDisplayName,
+      );
+      expect(result).toEqualRight({
+        ...user,
+        displayName: newDisplayName,
+        currentGQLSession: JSON.stringify(user.currentGQLSession),
+        currentRESTSession: JSON.stringify(user.currentRESTSession),
+      });
+    });
+    test('should resolve right and publish user updated subscription', async () => {
+      const newDisplayName = 'New Name';
+      mockPrisma.user.update.mockResolvedValueOnce({
+        ...user,
+        displayName: newDisplayName,
+      });
+
+      await userService.updateUserDisplayName(user.uid, user.displayName);
+      expect(mockPubSub.publish).toHaveBeenCalledWith(
+        `user/${user.uid}/updated`,
+        {
+          ...user,
+          displayName: newDisplayName,
+          currentGQLSession: JSON.stringify(user.currentGQLSession),
+          currentRESTSession: JSON.stringify(user.currentRESTSession),
+        },
+      );
+    });
+    test('should resolve left and error when invalid user uid is passed', async () => {
+      mockPrisma.user.update.mockRejectedValueOnce('NotFoundError');
+
+      const result = await userService.updateUserDisplayName(
+        'invalidUserUid',
+        user.displayName,
+      );
+      expect(result).toEqualLeft(USER_NOT_FOUND);
+    });
+    test('should resolve left and error when short display name is passed', async () => {
+      const newDisplayName = '';
+      const result = await userService.updateUserDisplayName(
+        user.uid,
+        newDisplayName,
+      );
+      expect(result).toEqualLeft(USER_SHORT_DISPLAY_NAME);
+    });
+  });
+
+  describe('updateUserLastLoggedOn', () => {
+    test('should resolve right and update user last logged on', async () => {
+      const currentTime = new Date();
+      mockPrisma.user.update.mockResolvedValueOnce({
+        ...user,
+        lastLoggedOn: currentTime,
+      });
+
+      const result = await userService.updateUserLastLoggedOn(user.uid);
+      expect(result).toEqualRight(true);
+    });
+
+    test('should resolve left and error when invalid user uid is passed', async () => {
+      mockPrisma.user.update.mockRejectedValueOnce('NotFoundError');
+
+      const result = await userService.updateUserLastLoggedOn('invalidUserUid');
+      expect(result).toEqualLeft(USER_NOT_FOUND);
+    });
+  });
+
   describe('fetchAllUsers', () => {
     test('should resolve right and return 20 users when cursor is null', async () => {
       mockPrisma.user.findMany.mockResolvedValueOnce(users);
@@ -431,6 +548,36 @@ describe('UserService', () => {
       mockPrisma.user.findMany.mockResolvedValueOnce([]);
 
       const result = await userService.fetchAllUsers(null, 20);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('fetchAllUsersV2', () => {
+    test('should resolve right and return first 20 users when searchString is null', async () => {
+      mockPrisma.user.findMany.mockResolvedValueOnce(users);
+
+      const result = await userService.fetchAllUsersV2(null, {
+        take: 20,
+        skip: 0,
+      });
+      expect(result).toEqual(users);
+    });
+    test('should resolve right and return next 20 users when searchString is provided', async () => {
+      mockPrisma.user.findMany.mockResolvedValueOnce(users);
+
+      const result = await userService.fetchAllUsersV2('.com', {
+        take: 20,
+        skip: 0,
+      });
+      expect(result).toEqual(users);
+    });
+    test('should resolve left and return an empty array when users not found', async () => {
+      mockPrisma.user.findMany.mockResolvedValueOnce([]);
+
+      const result = await userService.fetchAllUsersV2('Unknown entry', {
+        take: 20,
+        skip: 0,
+      });
       expect(result).toEqual([]);
     });
   });
@@ -554,6 +701,19 @@ describe('UserService', () => {
 
       const result = await userService.getUsersCount();
       expect(result).toEqual(10);
+    });
+  });
+
+  describe('removeUsersAsAdmin', () => {
+    test('should resolve right and return true for valid user UIDs', async () => {
+      mockPrisma.user.updateMany.mockResolvedValueOnce({ count: 1 });
+      const result = await userService.removeUsersAsAdmin(['123344']);
+      expect(result).toEqualRight(true);
+    });
+    test('should resolve right and return false for invalid user UIDs', async () => {
+      mockPrisma.user.updateMany.mockResolvedValueOnce({ count: 0 });
+      const result = await userService.removeUsersAsAdmin(['123344']);
+      expect(result).toEqualLeft(USERS_NOT_FOUND);
     });
   });
 });

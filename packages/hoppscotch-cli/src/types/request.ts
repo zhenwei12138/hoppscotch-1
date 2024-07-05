@@ -1,4 +1,6 @@
-import { HoppCollection, HoppRESTRequest } from "@hoppscotch/data";
+import { Environment, HoppCollection, HoppRESTRequest } from "@hoppscotch/data";
+import { z } from "zod";
+
 import { TestReport } from "../interfaces/response";
 import { HoppCLIError } from "./errors";
 
@@ -7,7 +9,9 @@ export type FormDataEntry = {
   value: string | Blob;
 };
 
-export type HoppEnvPair = { key: string; value: string };
+export type HoppEnvPair = Environment["variables"][number];
+
+export const HoppEnvKeyPairObject = z.record(z.string(), z.string());
 
 export type HoppEnvs = {
   global: HoppEnvPair[];
@@ -16,7 +20,7 @@ export type HoppEnvs = {
 
 export type CollectionStack = {
   path: string;
-  collection: HoppCollection<HoppRESTRequest>;
+  collection: HoppCollection;
 };
 
 export type RequestReport = {

@@ -2,12 +2,12 @@ import {
   Body,
   Controller,
   Get,
-  InternalServerErrorException,
   Post,
   Query,
   Request,
   Res,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInMagicDto } from './dto/signin-magic.dto';
@@ -19,24 +19,31 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GqlUser } from 'src/decorators/gql-user.decorator';
 import { AuthUser } from 'src/types/AuthUser';
 import { RTCookie } from 'src/decorators/rt-cookie.decorator';
-import {
-  AuthProvider,
-  authCookieHandler,
-  authProviderCheck,
-  throwHTTPErr,
-} from './helper';
+import { AuthProvider, authCookieHandler, authProviderCheck } from './helper';
 import { GoogleSSOGuard } from './guards/google-sso.guard';
 import { GithubSSOGuard } from './guards/github-sso.guard';
 import { MicrosoftSSOGuard } from './guards/microsoft-sso-.guard';
 import { ThrottlerBehindProxyGuard } from 'src/guards/throttler-behind-proxy.guard';
 import { SkipThrottle } from '@nestjs/throttler';
 import { AUTH_PROVIDER_NOT_SPECIFIED } from 'src/errors';
+import { ConfigService } from '@nestjs/config';
+import { throwHTTPErr } from 'src/utils';
+import { UserLastLoginInterceptor } from 'src/interceptors/user-last-login.interceptor';
 import { GitlabSSOGuard } from './guards/gitlab-sso.guard';
 
 @UseGuards(ThrottlerBehindProxyGuard)
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
+
+  @Get('providers')
+  async getAuthProviders() {
+    const providers = await this.authService.getAuthProviders();
+    return { providers };
+  }
 
   /**
    ** Route to initiate magic-link auth for a users email
@@ -46,8 +53,14 @@ export class AuthController {
     @Body() authData: SignInMagicDto,
     @Query('origin') origin: string,
   ) {
-    if (!authProviderCheck(AuthProvider.EMAIL))
+    if (
+      !authProviderCheck(
+        AuthProvider.EMAIL,
+        this.configService.get('INFRA.VITE_ALLOWED_AUTH_PROVIDERS'),
+      )
+    ) {
       throwHTTPErr({ message: AUTH_PROVIDER_NOT_SPECIFIED, statusCode: 404 });
+    }
 
     const deviceIdToken = await this.authService.signInMagicLink(
       authData.email,
@@ -100,6 +113,7 @@ export class AuthController {
   @Get('google/callback')
   @SkipThrottle()
   @UseGuards(GoogleSSOGuard)
+  @UseInterceptors(UserLastLoginInterceptor)
   async googleAuthRedirect(@Request() req, @Res() res) {
     const authTokens = await this.authService.generateAuthTokens(req.user.uid);
     if (E.isLeft(authTokens)) throwHTTPErr(authTokens.left);
@@ -125,6 +139,7 @@ export class AuthController {
   @Get('github/callback')
   @SkipThrottle()
   @UseGuards(GithubSSOGuard)
+  @UseInterceptors(UserLastLoginInterceptor)
   async githubAuthRedirect(@Request() req, @Res() res) {
     const authTokens = await this.authService.generateAuthTokens(req.user.uid);
     if (E.isLeft(authTokens)) throwHTTPErr(authTokens.left);
@@ -176,6 +191,7 @@ export class AuthController {
   @Get('microsoft/callback')
   @SkipThrottle()
   @UseGuards(MicrosoftSSOGuard)
+  @UseInterceptors(UserLastLoginInterceptor)
   async microsoftAuthRedirect(@Request() req, @Res() res) {
     const authTokens = await this.authService.generateAuthTokens(req.user.uid);
     if (E.isLeft(authTokens)) throwHTTPErr(authTokens.left);

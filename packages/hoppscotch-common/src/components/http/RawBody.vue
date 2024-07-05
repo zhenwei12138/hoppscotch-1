@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-col flex-1">
+  <div class="flex flex-1 flex-col">
     <div
-      class="sticky z-10 flex items-center justify-between flex-shrink-0 pl-4 overflow-x-auto border-b bg-primary border-dividerLight top-upperMobileStickyFold sm:top-upperMobileTertiaryStickyFold"
+      class="sticky top-upperMobileStickyFold z-10 flex flex-shrink-0 items-center justify-between overflow-x-auto border-b border-dividerLight bg-primary pl-4 sm:top-upperMobileTertiaryStickyFold"
     >
-      <label class="font-semibold truncate text-secondaryLight">
+      <label class="truncate font-semibold text-secondaryLight">
         {{ t("request.raw_body") }}
       </label>
       <div class="flex">
@@ -23,9 +23,9 @@
         <HoppButtonSecondary
           v-tippy="{ theme: 'tooltip' }"
           :title="t('state.linewrap')"
-          :class="{ '!text-accent': linewrapEnabled }"
+          :class="{ '!text-accent': WRAP_LINES }"
           :icon="IconWrapText"
-          @click.prevent="linewrapEnabled = !linewrapEnabled"
+          @click.prevent="toggleNestedSetting('WRAP_LINES', 'httpRequestBody')"
         />
         <HoppButtonSecondary
           v-if="
@@ -59,7 +59,9 @@
         />
       </div>
     </div>
-    <div ref="rawBodyParameters" class="flex flex-col flex-1"></div>
+    <div class="h-full relative">
+      <div ref="rawBodyParameters" class="absolute inset-0"></div>
+    </div>
   </div>
 </template>
 
@@ -85,6 +87,9 @@ import { isJSONContentType } from "~/helpers/utils/contenttypes"
 import jsonLinter from "~/helpers/editor/linting/json"
 import { readFileAsText } from "~/helpers/functional/files"
 import xmlFormat from "xml-formatter"
+import { useNestedSetting } from "~/composables/settings"
+import { toggleNestedSetting } from "~/newstore/settings"
+import * as LJSON from "lossless-json"
 
 type PossibleContentTypes = Exclude<
   ValidContentTypes,
@@ -122,23 +127,23 @@ const langLinter = computed(() =>
   isJSONContentType(body.value.contentType) ? jsonLinter : null
 )
 
-const linewrapEnabled = ref(true)
+const WRAP_LINES = useNestedSetting("WRAP_LINES", "httpRequestBody")
 const rawBodyParameters = ref<any | null>(null)
 
 const codemirrorValue: Ref<string | undefined> =
-  typeof rawParamsBody.value == "string"
+  typeof rawParamsBody.value === "string"
     ? ref(rawParamsBody.value)
     : ref(undefined)
 
 watch(rawParamsBody, (newVal) => {
-  typeof newVal == "string"
+  typeof newVal === "string"
     ? (codemirrorValue.value = newVal)
     : (codemirrorValue.value = undefined)
 })
 
 // propagate the edits from codemirror back to the body
 watch(codemirrorValue, (updatedValue) => {
-  if (updatedValue && updatedValue != rawParamsBody.value) {
+  if (updatedValue && updatedValue !== rawParamsBody.value) {
     rawParamsBody.value = updatedValue
   }
 })
@@ -148,7 +153,7 @@ useCodemirror(
   codemirrorValue,
   reactive({
     extendedEditorConfig: {
-      lineWrapping: linewrapEnabled,
+      lineWrapping: WRAP_LINES,
       mode: rawInputEditorLang,
       placeholder: t("request.raw_body").toString(),
     },
@@ -183,9 +188,9 @@ const prettifyRequestBody = () => {
   let prettifyBody = ""
   try {
     if (body.value.contentType.endsWith("json")) {
-      const jsonObj = JSON.parse(rawParamsBody.value as string)
-      prettifyBody = JSON.stringify(jsonObj, null, 2)
-    } else if (body.value.contentType == "application/xml") {
+      const jsonObj = LJSON.parse(rawParamsBody.value as string)
+      prettifyBody = LJSON.stringify(jsonObj, undefined, 2) as string
+    } else if (body.value.contentType === "application/xml") {
       prettifyBody = prettifyXML(rawParamsBody.value as string)
     }
     rawParamsBody.value = prettifyBody
@@ -205,3 +210,9 @@ const prettifyXML = (xml: string) => {
   })
 }
 </script>
+
+<style lang="scss" scoped>
+:deep(.cm-panels) {
+  @apply top-upperFourthStickyFold #{!important};
+}
+</style>

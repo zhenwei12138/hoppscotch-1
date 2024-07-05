@@ -8,7 +8,7 @@
   >
     <template #body>
       <div class="flex flex-col space-y-2">
-        <h2 class="p-4 font-semibold font-bold text-secondaryDark">
+        <h2 class="p-4 font-bold font-semibold text-secondaryDark">
           {{ t("layout.name") }}
         </h2>
         <HoppSmartItem
@@ -27,7 +27,7 @@
           active
           @click="expandCollection"
         />
-        <h2 class="p-4 font-semibold font-bold text-secondaryDark">
+        <h2 class="p-4 font-bold font-semibold text-secondaryDark">
           {{ t("support.title") }}
         </h2>
         <template
@@ -67,7 +67,6 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from "vue"
 import IconSidebar from "~icons/lucide/sidebar"
 import IconSidebarOpen from "~icons/lucide/sidebar-open"
 import IconChevronRight from "~icons/lucide/chevron-right"
@@ -77,16 +76,8 @@ import { platform } from "~/platform"
 
 const t = useI18n()
 
-const ZEN_MODE = useSetting("ZEN_MODE")
 const EXPAND_NAVIGATION = useSetting("EXPAND_NAVIGATION")
 const SIDEBAR = useSetting("SIDEBAR")
-
-watch(
-  () => ZEN_MODE.value,
-  () => {
-    EXPAND_NAVIGATION.value = !ZEN_MODE.value
-  }
-)
 
 defineProps<{
   show: boolean

@@ -1,6 +1,11 @@
-import { HoppCollection, HoppRESTRequest } from "@hoppscotch/data"
-import { getTabsRefTo } from "../rest/tab"
+import {
+  HoppCollection,
+  HoppGQLRequest,
+  HoppRESTRequest,
+} from "@hoppscotch/data"
 import { getAffectedIndexes } from "./affectedIndex"
+import { RESTTabService } from "~/services/tab/rest"
+import { getService } from "~/modules/dioc"
 
 /**
  * Resolve save context on reorder
@@ -32,7 +37,8 @@ export function resolveSaveContextOnRequestReorder(payload: {
   // if (newIndex === -1) remove it from the map because it will be deleted
   if (newIndex === -1) affectedIndexes.delete(lastIndex)
 
-  const tabs = getTabsRefTo((tab) => {
+  const tabService = getService(RESTTabService)
+  const tabs = tabService.getTabsRefTo((tab) => {
     return (
       tab.document.saveContext?.originLocation === "user-collection" &&
       tab.document.saveContext.folderPath === folderPath &&
@@ -51,22 +57,29 @@ export function resolveSaveContextOnRequestReorder(payload: {
 }
 
 export function getRequestsByPath(
-  collections: HoppCollection<HoppRESTRequest>[],
+  collections: HoppCollection[],
   path: string
-): HoppRESTRequest[] {
+): HoppRESTRequest[] | HoppGQLRequest[] {
   // path will be like this "0/0/1" these are the indexes of the folders
   const pathArray = path.split("/").map((index) => parseInt(index))
 
   let currentCollection = collections[pathArray[0]]
 
   if (pathArray.length === 1) {
-    return currentCollection.requests
-  } else {
-    for (let i = 1; i < pathArray.length; i++) {
-      const folder = currentCollection.folders[pathArray[i]]
-      if (folder) currentCollection = folder
-    }
+    const latestVersionedRequests = currentCollection.requests.filter(
+      (req): req is HoppRESTRequest => req.v === "3"
+    )
+
+    return latestVersionedRequests
+  }
+  for (let i = 1; i < pathArray.length; i++) {
+    const folder = currentCollection.folders[pathArray[i]]
+    if (folder) currentCollection = folder
   }
 
-  return currentCollection.requests
+  const latestVersionedRequests = currentCollection.requests.filter(
+    (req): req is HoppRESTRequest => req.v === "3"
+  )
+
+  return latestVersionedRequests
 }

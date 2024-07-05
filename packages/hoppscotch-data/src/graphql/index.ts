@@ -1,49 +1,81 @@
-import { HoppGQLAuth } from "./HoppGQLAuth"
+import { InferredEntity, createVersionedEntity } from "verzod"
+import { z } from "zod"
+import V1_VERSION from "./v/1"
+import V2_VERSION from "./v/2"
+import V3_VERSION from "./v/3"
+import V4_VERSION from "./v/4"
+import V5_VERSION from "./v/5"
 
-export * from "./HoppGQLAuth"
+export { GQLHeader } from "./v/1"
+export {
+  HoppGQLAuthBasic,
+  HoppGQLAuthBearer,
+  HoppGQLAuthNone,
+  HoppGQLAuthInherit,
+} from "./v/2"
 
-export const GQL_REQ_SCHEMA_VERSION = 2
+export { HoppGQLAuthOAuth2, HoppGQLAuth } from "./v/5"
 
-export type GQLHeader = {
-  key: string
-  value: string
-  active: boolean
-}
+export { HoppGQLAuthAPIKey } from "./v/4"
 
-export type HoppGQLRequest = {
-  id?: string
-  v: number
-  name: string
-  url: string
-  headers: GQLHeader[]
-  query: string
-  variables: string
-  auth: HoppGQLAuth
-}
+export const GQL_REQ_SCHEMA_VERSION = 5
 
-export function translateToGQLRequest(x: any): HoppGQLRequest {
-  if (x.v && x.v === GQL_REQ_SCHEMA_VERSION) return x
+const versionedObject = z.object({
+  v: z.number(),
+})
 
-  // Old request
-  const name = x.name ?? "Untitled"
-  const url = x.url ?? ""
-  const headers = x.headers ?? []
-  const query = x.query ?? ""
-  const variables = x.variables ?? []
-  const auth = x.auth ?? {
-    authType: "none",
-    authActive: true,
+export const HoppGQLRequest = createVersionedEntity({
+  latestVersion: 5,
+  versionMap: {
+    1: V1_VERSION,
+    2: V2_VERSION,
+    3: V3_VERSION,
+    4: V4_VERSION,
+    5: V5_VERSION,
+  },
+  getVersion(x) {
+    const result = versionedObject.safeParse(x)
+
+    return result.success ? result.data.v : null
+  },
+})
+
+export type HoppGQLRequest = InferredEntity<typeof HoppGQLRequest>
+
+const DEFAULT_QUERY = `
+query Request {
+  method
+  url
+  headers {
+    key
+    value
   }
+}`.trim()
 
+export function getDefaultGQLRequest(): HoppGQLRequest {
   return {
     v: GQL_REQ_SCHEMA_VERSION,
-    name,
-    url,
-    headers,
-    query,
-    variables,
-    auth
+    name: "Untitled",
+    url: "https://echo.hoppscotch.io/graphql",
+    headers: [],
+    variables: `
+{
+  "id": "1"
+}`.trim(),
+    query: DEFAULT_QUERY,
+    auth: {
+      authType: "inherit",
+      authActive: true,
+    },
   }
+}
+
+/**
+ * @deprecated This function is deprecated. Use `HoppGQLRequest` instead.
+ */
+export function translateToGQLRequest(x: unknown): HoppGQLRequest {
+  const result = HoppGQLRequest.safeParse(x)
+  return result.type === "ok" ? result.value : getDefaultGQLRequest()
 }
 
 export function makeGQLRequest(x: Omit<HoppGQLRequest, "v">): HoppGQLRequest {

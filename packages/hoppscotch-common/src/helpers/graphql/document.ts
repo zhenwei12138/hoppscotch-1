@@ -1,4 +1,7 @@
 import { HoppGQLRequest } from "@hoppscotch/data"
+import { GQLResponseEvent } from "./connection"
+import { GQLOptionTabs } from "~/components/graphql/RequestOptions.vue"
+import { HoppInheritedProperty } from "../types/HoppInheritedProperties"
 
 export type HoppGQLSaveContext =
   | {
@@ -55,4 +58,26 @@ export type HoppGQLDocument = {
    * This contains where the request is originated from basically.
    */
   saveContext?: HoppGQLSaveContext
+
+  /**
+   * The response as it is in the document
+   * (if any)
+   */
+  response?: GQLResponseEvent[] | null
+
+  /**
+   * Response tab preference for the current tab's document
+   */
+  responseTabPreference?: string
+
+  /**
+   * Options tab preference for the current tab's document
+   */
+  optionTabPreference?: GQLOptionTabs
+
+  /**
+   * The inherited properties from the parent collection
+   * (if any)
+   */
+  inheritedProperties?: HoppInheritedProperty
 }

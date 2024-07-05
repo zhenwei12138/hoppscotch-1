@@ -8,13 +8,18 @@ import * as T from 'fp-ts/Task';
 import * as A from 'fp-ts/Array';
 import { pipe, constVoid } from 'fp-ts/function';
 import { AuthUser } from 'src/types/AuthUser';
-import { USER_NOT_FOUND } from 'src/errors';
+import {
+  USERS_NOT_FOUND,
+  USER_NOT_FOUND,
+  USER_SHORT_DISPLAY_NAME,
+} from 'src/errors';
 import { SessionType, User } from './user.model';
 import { USER_UPDATE_FAILED } from 'src/errors';
 import { PubSubService } from 'src/pubsub/pubsub.service';
 import { stringToJson, taskEitherValidateArraySeq } from 'src/utils';
 import { UserDataHandler } from './user.data.handler';
 import { User as DbUser } from '@prisma/client';
+import { OffsetPaginationArgs } from 'src/types/input-types.args';
 
 @Injectable()
 export class UserService {
@@ -57,16 +62,16 @@ export class UserService {
    * @returns Option of found User
    */
   async findUserByEmail(email: string): Promise<O.None | O.Some<AuthUser>> {
-    try {
-      const user = await this.prisma.user.findUniqueOrThrow({
-        where: {
-          email: email,
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
         },
-      });
-      return O.some(user);
-    } catch (error) {
-      return O.none;
-    }
+      },
+    });
+    if (!user) return O.none;
+    return O.some(user);
   }
 
   /**
@@ -89,13 +94,27 @@ export class UserService {
   }
 
   /**
+   * Find users with given IDs
+   * @param userUIDs User IDs
+   * @returns Array of found Users
+   */
+  async findUsersByIds(userUIDs: string[]): Promise<AuthUser[]> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        uid: { in: userUIDs },
+      },
+    });
+    return users;
+  }
+
+  /**
    * Update User with new generated hashed refresh token
    *
    * @param refreshTokenHash Hash of newly generated refresh token
    * @param userUid User uid
    * @returns Either of User with updated refreshToken
    */
-  async UpdateUserRefreshToken(refreshTokenHash: string, userUid: string) {
+  async updateUserRefreshToken(refreshTokenHash: string, userUid: string) {
     try {
       const user = await this.prisma.user.update({
         where: {
@@ -154,6 +173,7 @@ export class UserService {
         displayName: userDisplayName,
         email: profile.emails[0].value,
         photoURL: userPhotoURL,
+        lastLoggedOn: new Date(),
         providerAccounts: {
           create: {
             provider: profile.provider,
@@ -201,7 +221,7 @@ export class UserService {
   }
 
   /**
-   * Update User displayName and photoURL
+   * Update User displayName and photoURL when logged in via a SSO provider
    *
    * @param user User object
    * @param profile Data received from SSO provider on the users account
@@ -216,6 +236,7 @@ export class UserService {
         data: {
           displayName: !profile.displayName ? null : profile.displayName,
           photoURL: !profile.photos ? null : profile.photos[0].value,
+          lastLoggedOn: new Date(),
         },
       });
       return E.right(updatedUser);
@@ -269,6 +290,66 @@ export class UserService {
   }
 
   /**
+   * Update a user's displayName
+   * @param userUID User UID
+   * @param displayName User's displayName
+   * @returns a Either of User or error
+   */
+  async updateUserDisplayName(userUID: string, displayName: string) {
+    if (!displayName || displayName.length === 0) {
+      return E.left(USER_SHORT_DISPLAY_NAME);
+    }
+
+    try {
+      const dbUpdatedUser = await this.prisma.user.update({
+        where: { uid: userUID },
+        data: { displayName },
+      });
+
+      const updatedUser = this.convertDbUserToUser(dbUpdatedUser);
+
+      // Publish subscription for user updates
+      await this.pubsub.publish(`user/${updatedUser.uid}/updated`, updatedUser);
+
+      return E.right(updatedUser);
+    } catch (error) {
+      return E.left(USER_NOT_FOUND);
+    }
+  }
+
+  /**
+   * Update user's lastLoggedOn timestamp
+   * @param userUID User UID
+   */
+  async updateUserLastLoggedOn(userUid: string) {
+    try {
+      await this.prisma.user.update({
+        where: { uid: userUid },
+        data: { lastLoggedOn: new Date() },
+      });
+      return E.right(true);
+    } catch (e) {
+      return E.left(USER_NOT_FOUND);
+    }
+  }
+
+  /**
+   * Update user's lastActiveOn timestamp
+   * @param userUID User UID
+   */
+  async updateUserLastActiveOn(userUid: string) {
+    try {
+      await this.prisma.user.update({
+        where: { uid: userUid },
+        data: { lastActiveOn: new Date() },
+      });
+      return E.right(true);
+    } catch (e) {
+      return E.left(USER_NOT_FOUND);
+    }
+  }
+
+  /**
    * Validate and parse currentRESTSession and currentGQLSession
    * @param sessionData string of the session
    * @returns a Either of JSON object or error
@@ -285,6 +366,7 @@ export class UserService {
    * @param cursorID string of userUID or null
    * @param take number of users to query
    * @returns an array of `User` object
+   * @deprecated use fetchAllUsersV2 instead
    */
   async fetchAllUsers(cursorID: string, take: number) {
     const fetchedUsers = await this.prisma.user.findMany({
@@ -292,6 +374,43 @@ export class UserService {
       take: take,
       cursor: cursorID ? { uid: cursorID } : undefined,
     });
+    return fetchedUsers;
+  }
+
+  /**
+   * Fetch all the users in the `User` table based on cursor
+   * @param searchString search on user's displayName or email
+   * @param paginationOption pagination options
+   * @returns an array of `User` object
+   */
+  async fetchAllUsersV2(
+    searchString: string,
+    paginationOption: OffsetPaginationArgs,
+  ) {
+    const fetchedUsers = await this.prisma.user.findMany({
+      skip: paginationOption.skip,
+      take: paginationOption.take,
+      where: searchString
+        ? {
+            OR: [
+              {
+                displayName: {
+                  contains: searchString,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                email: {
+                  contains: searchString,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : undefined,
+      orderBy: [{ isAdmin: 'desc' }, { displayName: 'asc' }],
+    });
+
     return fetchedUsers;
   }
 
@@ -322,6 +441,23 @@ export class UserService {
       return E.right(elevatedUser);
     } catch (error) {
       return E.left(USER_NOT_FOUND);
+    }
+  }
+
+  /**
+   * Change users to admins by toggling isAdmin param to true
+   * @param userUID user UIDs
+   * @returns a Either of true or error
+   */
+  async makeAdmins(userUIDs: string[]) {
+    try {
+      await this.prisma.user.updateMany({
+        where: { uid: { in: userUIDs } },
+        data: { isAdmin: true },
+      });
+      return E.right(true);
+    } catch (error) {
+      return E.left(USER_UPDATE_FAILED);
     }
   }
 
@@ -442,5 +578,23 @@ export class UserService {
     } catch (error) {
       return E.left(USER_NOT_FOUND);
     }
+  }
+
+  /**
+   * Change users from an admin by toggling isAdmin param to false
+   * @param userUIDs user UIDs
+   * @returns a Either of true or error
+   */
+  async removeUsersAsAdmin(userUIDs: string[]) {
+    const data = await this.prisma.user.updateMany({
+      where: { uid: { in: userUIDs } },
+      data: { isAdmin: false },
+    });
+
+    if (data.count === 0) {
+      return E.left(USERS_NOT_FOUND);
+    }
+
+    return E.right(true);
   }
 }

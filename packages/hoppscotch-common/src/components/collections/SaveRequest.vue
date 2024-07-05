@@ -56,44 +56,47 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from "vue"
-import { cloneDeep } from "lodash-es"
+import { useI18n } from "@composables/i18n"
+import { useToast } from "@composables/toast"
 import {
   HoppGQLRequest,
   HoppRESTRequest,
   isHoppRESTRequest,
 } from "@hoppscotch/data"
-import { pipe } from "fp-ts/function"
+import { computedWithControl } from "@vueuse/core"
+import { useService } from "dioc/vue"
 import * as TE from "fp-ts/TaskEither"
-import { GetMyTeamsQuery } from "~/helpers/backend/graphql"
+import { pipe } from "fp-ts/function"
+import { cloneDeep } from "lodash-es"
+import { computed, nextTick, reactive, ref, watch } from "vue"
+import { GQLError } from "~/helpers/backend/GQLClient"
 import {
   createRequestInCollection,
   updateTeamRequest,
 } from "~/helpers/backend/mutations/TeamRequest"
 import { Picked } from "~/helpers/types/HoppPicked"
-import { useI18n } from "@composables/i18n"
-import { useToast } from "@composables/toast"
 import {
+  cascadeParentCollectionForHeaderAuth,
   editGraphqlRequest,
   editRESTRequest,
   saveGraphqlRequestAs,
   saveRESTRequestAs,
 } from "~/newstore/collections"
-import { GQLError } from "~/helpers/backend/GQLClient"
-import { computedWithControl } from "@vueuse/core"
 import { platform } from "~/platform"
-import { currentActiveTab as activeRESTTab } from "~/helpers/rest/tab"
-import { currentActiveTab as activeGQLTab } from "~/helpers/graphql/tab"
+import { GQLTabService } from "~/services/tab/graphql"
+import { RESTTabService } from "~/services/tab/rest"
+import { TeamWorkspace } from "~/services/workspace.service"
 
 const t = useI18n()
 const toast = useToast()
 
-type SelectedTeam = GetMyTeamsQuery["myTeams"][number] | undefined
+const RESTTabs = useService(RESTTabService)
+const GQLTabs = useService(GQLTabService)
 
 type CollectionType =
   | {
       type: "team-collections"
-      selectedTeam: SelectedTeam
+      selectedTeam: TeamWorkspace
     }
   | { type: "my-collections"; selectedTeam: undefined }
 
@@ -123,13 +126,13 @@ const emit = defineEmits<{
 }>()
 
 const gqlRequestName = computedWithControl(
-  () => activeGQLTab.value,
-  () => activeGQLTab.value.document.request.name
+  () => GQLTabs.currentActiveTab.value,
+  () => GQLTabs.currentActiveTab.value.document.request.name
 )
 
 const restRequestName = computedWithControl(
-  () => activeRESTTab.value,
-  () => activeRESTTab.value.document.request.name
+  () => RESTTabs.currentActiveTab.value,
+  () => RESTTabs.currentActiveTab.value.document.request.name
 )
 
 const reqName = computed(() => {
@@ -137,20 +140,21 @@ const reqName = computed(() => {
     return props.request.name
   } else if (props.mode === "rest") {
     return restRequestName.value
-  } else {
-    return gqlRequestName.value
   }
+  return gqlRequestName.value
 })
 
 const requestName = ref(reqName.value)
 
 watch(
-  () => [activeRESTTab.value, activeGQLTab.value],
+  () => [RESTTabs.currentActiveTab.value, GQLTabs.currentActiveTab.value],
   () => {
     if (props.mode === "rest") {
-      requestName.value = activeRESTTab.value?.document.request.name ?? ""
+      requestName.value =
+        RESTTabs.currentActiveTab.value?.document.request.name ?? ""
     } else {
-      requestName.value = activeGQLTab.value?.document.request.name ?? ""
+      requestName.value =
+        GQLTabs.currentActiveTab.value?.document.request.name ?? ""
     }
   }
 )
@@ -186,7 +190,7 @@ watch(
   }
 )
 
-const updateTeam = (newTeam: SelectedTeam) => {
+const updateTeam = (newTeam: TeamWorkspace) => {
   collectionsType.value.selectedTeam = newTeam
 }
 
@@ -210,8 +214,8 @@ const saveRequestAs = async () => {
 
   const requestUpdated =
     props.mode === "rest"
-      ? cloneDeep(activeRESTTab.value.document.request)
-      : cloneDeep(activeGQLTab.value.document.request)
+      ? cloneDeep(RESTTabs.currentActiveTab.value.document.request)
+      : cloneDeep(GQLTabs.currentActiveTab.value.document.request)
 
   requestUpdated.name = requestName.value
 
@@ -224,7 +228,7 @@ const saveRequestAs = async () => {
       requestUpdated
     )
 
-    activeRESTTab.value.document = {
+    RESTTabs.currentActiveTab.value.document = {
       request: requestUpdated,
       isDirty: false,
       saveContext: {
@@ -232,6 +236,16 @@ const saveRequestAs = async () => {
         folderPath: `${picked.value.collectionIndex}`,
         requestIndex: insertionIndex,
       },
+    }
+
+    const { auth, headers } = cascadeParentCollectionForHeaderAuth(
+      `${picked.value.collectionIndex}`,
+      "rest"
+    )
+
+    RESTTabs.currentActiveTab.value.document.inheritedProperties = {
+      auth,
+      headers,
     }
 
     platform.analytics?.logEvent({
@@ -251,7 +265,7 @@ const saveRequestAs = async () => {
       requestUpdated
     )
 
-    activeRESTTab.value.document = {
+    RESTTabs.currentActiveTab.value.document = {
       request: requestUpdated,
       isDirty: false,
       saveContext: {
@@ -259,6 +273,16 @@ const saveRequestAs = async () => {
         folderPath: picked.value.folderPath,
         requestIndex: insertionIndex,
       },
+    }
+
+    const { auth, headers } = cascadeParentCollectionForHeaderAuth(
+      picked.value.folderPath,
+      "rest"
+    )
+
+    RESTTabs.currentActiveTab.value.document.inheritedProperties = {
+      auth,
+      headers,
     }
 
     platform.analytics?.logEvent({
@@ -279,7 +303,7 @@ const saveRequestAs = async () => {
       requestUpdated
     )
 
-    activeRESTTab.value.document = {
+    RESTTabs.currentActiveTab.value.document = {
       request: requestUpdated,
       isDirty: false,
       saveContext: {
@@ -287,6 +311,16 @@ const saveRequestAs = async () => {
         folderPath: picked.value.folderPath,
         requestIndex: picked.value.requestIndex,
       },
+    }
+
+    const { auth, headers } = cascadeParentCollectionForHeaderAuth(
+      picked.value.folderPath,
+      "rest"
+    )
+
+    RESTTabs.currentActiveTab.value.document.inheritedProperties = {
+      auth,
+      headers,
     }
 
     platform.analytics?.logEvent({
@@ -373,6 +407,16 @@ const saveRequestAs = async () => {
       workspaceType: "team",
     })
 
+    const { auth, headers } = cascadeParentCollectionForHeaderAuth(
+      picked.value.folderPath,
+      "graphql"
+    )
+
+    GQLTabs.currentActiveTab.value.document.inheritedProperties = {
+      auth,
+      headers,
+    }
+
     requestSaved()
   } else if (picked.value.pickedType === "gql-my-folder") {
     // TODO: Check for GQL request ?
@@ -388,6 +432,16 @@ const saveRequestAs = async () => {
       workspaceType: "team",
     })
 
+    const { auth, headers } = cascadeParentCollectionForHeaderAuth(
+      picked.value.folderPath,
+      "graphql"
+    )
+
+    GQLTabs.currentActiveTab.value.document.inheritedProperties = {
+      auth,
+      headers,
+    }
+
     requestSaved()
   } else if (picked.value.pickedType === "gql-my-collection") {
     // TODO: Check for GQL request ?
@@ -402,6 +456,16 @@ const saveRequestAs = async () => {
       platform: "gql",
       workspaceType: "team",
     })
+
+    const { auth, headers } = cascadeParentCollectionForHeaderAuth(
+      `${picked.value.collectionIndex}`,
+      "graphql"
+    )
+
+    GQLTabs.currentActiveTab.value.document.inheritedProperties = {
+      auth,
+      headers,
+    }
 
     requestSaved()
   }
@@ -427,7 +491,7 @@ const updateTeamCollectionOrFolder = (
   const data = {
     title: requestUpdated.name,
     request: JSON.stringify(requestUpdated),
-    teamID: collectionsType.value.selectedTeam.id,
+    teamID: collectionsType.value.selectedTeam.teamID,
   }
   pipe(
     createRequestInCollection(collectionID, data),
@@ -439,7 +503,7 @@ const updateTeamCollectionOrFolder = (
       (result) => {
         const { createRequestInCollection } = result
 
-        activeRESTTab.value.document = {
+        RESTTabs.currentActiveTab.value.document = {
           request: requestUpdated,
           isDirty: false,
           saveContext: {
@@ -460,7 +524,7 @@ const updateTeamCollectionOrFolder = (
 const requestSaved = () => {
   toast.success(`${t("request.added")}`)
   nextTick(() => {
-    activeRESTTab.value.document.isDirty = false
+    RESTTabs.currentActiveTab.value.document.isDirty = false
   })
   hideModal()
 }
@@ -474,21 +538,20 @@ const getErrorMessage = (err: GQLError<string>) => {
   console.error(err)
   if (err.type === "network_error") {
     return t("error.network_error")
-  } else {
-    switch (err.error) {
-      case "team_coll/short_title":
-        return t("collection.name_length_insufficient")
-      case "team/invalid_coll_id":
-        return t("team.invalid_id")
-      case "team/not_required_role":
-        return t("profile.no_permission")
-      case "team_req/not_required_role":
-        return t("profile.no_permission")
-      case "Forbidden resource":
-        return t("profile.no_permission")
-      default:
-        return t("error.something_went_wrong")
-    }
+  }
+  switch (err.error) {
+    case "team_coll/short_title":
+      return t("collection.name_length_insufficient")
+    case "team/invalid_coll_id":
+      return t("team.invalid_id")
+    case "team/not_required_role":
+      return t("profile.no_permission")
+    case "team_req/not_required_role":
+      return t("profile.no_permission")
+    case "Forbidden resource":
+      return t("profile.no_permission")
+    default:
+      return t("error.something_went_wrong")
   }
 }
 </script>

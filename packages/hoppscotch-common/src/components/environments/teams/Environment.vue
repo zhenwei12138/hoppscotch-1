@@ -1,16 +1,16 @@
 <template>
   <div
-    class="flex items-stretch group"
+    class="group flex items-stretch"
     @contextmenu.prevent="options!.tippy.show()"
   >
     <span
-      class="flex items-center justify-center px-4 cursor-pointer"
+      class="flex cursor-pointer items-center justify-center px-4"
       @click="emit('edit-environment')"
     >
       <icon-lucide-layers class="svg-icons" />
     </span>
     <span
-      class="flex flex-1 min-w-0 py-2 pr-2 cursor-pointer transition group-hover:text-secondaryDark"
+      class="flex min-w-0 flex-1 cursor-pointer py-2 pr-2 transition group-hover:text-secondaryDark"
       @click="emit('edit-environment')"
     >
       <span class="truncate">
@@ -19,7 +19,6 @@
     </span>
     <span>
       <tippy
-        v-if="!isViewer"
         ref="options"
         interactive
         trigger="click"
@@ -39,8 +38,10 @@
             role="menu"
             @keyup.e="edit!.$el.click()"
             @keyup.d="duplicate!.$el.click()"
+            @keyup.j="exportAsJsonEl!.$el.click()"
             @keyup.delete="deleteAction!.$el.click()"
-            @keyup.escape="options!.tippy().hide()"
+            @keyup.p="propertiesAction!.$el.click()"
+            @keyup.escape="options!.tippy?.hide()"
           >
             <HoppSmartItem
               ref="edit"
@@ -54,7 +55,9 @@
                 }
               "
             />
+
             <HoppSmartItem
+              v-if="!isViewer"
               ref="duplicate"
               :icon="IconCopy"
               :label="`${t('action.duplicate')}`"
@@ -67,6 +70,20 @@
               "
             />
             <HoppSmartItem
+              v-if="!isViewer"
+              ref="exportAsJsonEl"
+              :icon="IconEdit"
+              :label="`${t('export.as_json')}`"
+              :shortcut="['J']"
+              @click="
+                () => {
+                  exportEnvironmentAsJSON()
+                  hide()
+                }
+              "
+            />
+            <HoppSmartItem
+              v-if="!isViewer"
               ref="deleteAction"
               :icon="IconTrash2"
               :label="`${t('action.delete')}`"
@@ -74,6 +91,18 @@
               @click="
                 () => {
                   confirmRemove = true
+                  hide()
+                }
+              "
+            />
+            <HoppSmartItem
+              ref="propertiesAction"
+              :icon="IconSettings2"
+              :label="t('action.properties')"
+              :shortcut="['P']"
+              @click="
+                () => {
+                  emit('show-environment-properties')
                   hide()
                 }
               "
@@ -92,23 +121,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
-import { pipe } from "fp-ts/function"
-import * as TE from "fp-ts/TaskEither"
 import { useToast } from "@composables/toast"
+import { HoppSmartItem } from "@hoppscotch/ui"
+import { useService } from "dioc/vue"
+import * as TE from "fp-ts/TaskEither"
+import { pipe } from "fp-ts/function"
+import { ref } from "vue"
+import { TippyComponent } from "vue-tippy"
+
 import { useI18n } from "~/composables/i18n"
+import { GQLError } from "~/helpers/backend/GQLClient"
 import {
   deleteTeamEnvironment,
   createDuplicateEnvironment as duplicateEnvironment,
 } from "~/helpers/backend/mutations/TeamEnvironment"
-import { GQLError } from "~/helpers/backend/GQLClient"
+import { exportAsJSON } from "~/helpers/import-export/export/environment"
 import { TeamEnvironment } from "~/helpers/teams/TeamEnvironment"
-import IconEdit from "~icons/lucide/edit"
+import { SecretEnvironmentService } from "~/services/secret-environment.service"
 import IconCopy from "~icons/lucide/copy"
-import IconTrash2 from "~icons/lucide/trash-2"
+import IconEdit from "~icons/lucide/edit"
 import IconMoreVertical from "~icons/lucide/more-vertical"
-import { TippyComponent } from "vue-tippy"
-import { HoppSmartItem } from "@hoppscotch/ui"
+import IconSettings2 from "~icons/lucide/settings-2"
+import IconTrash2 from "~icons/lucide/trash-2"
 
 const t = useI18n()
 const toast = useToast()
@@ -120,15 +154,25 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "edit-environment"): void
+  (e: "show-environment-properties"): void
 }>()
 
+const secretEnvironmentService = useService(SecretEnvironmentService)
+
 const confirmRemove = ref(false)
+
+const exportEnvironmentAsJSON = () =>
+  exportAsJSON(props.environment)
+    ? toast.success(t("state.download_started"))
+    : toast.error(t("state.download_failed"))
 
 const tippyActions = ref<TippyComponent | null>(null)
 const options = ref<TippyComponent | null>(null)
 const edit = ref<typeof HoppSmartItem>()
 const duplicate = ref<typeof HoppSmartItem>()
 const deleteAction = ref<typeof HoppSmartItem>()
+const exportAsJsonEl = ref<typeof HoppSmartItem>()
+const propertiesAction = ref<typeof HoppSmartItem>()
 
 const removeEnvironment = () => {
   pipe(
@@ -140,6 +184,7 @@ const removeEnvironment = () => {
       },
       () => {
         toast.success(`${t("team_environment.deleted")}`)
+        secretEnvironmentService.deleteSecretEnvironment(props.environment.id)
       }
     )
   )()
@@ -163,13 +208,12 @@ const duplicateEnvironments = () => {
 const getErrorMessage = (err: GQLError<string>) => {
   if (err.type === "network_error") {
     return t("error.network_error")
-  } else {
-    switch (err.error) {
-      case "team_environment/not_found":
-        return t("team_environment.not_found")
-      default:
-        return t("error.something_went_wrong")
-    }
+  }
+  switch (err.error) {
+    case "team_environment/not_found":
+      return t("team_environment.not_found")
+    default:
+      return t("error.something_went_wrong")
   }
 }
 </script>

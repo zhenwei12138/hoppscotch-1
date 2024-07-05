@@ -1,34 +1,55 @@
 <template>
   <HoppSmartTabs
-    v-model="selectedOptionsTab"
+    v-model="selectedOptionTab"
     styles="sticky overflow-x-auto flex-shrink-0 bg-primary top-upperMobilePrimaryStickyFold sm:top-upperPrimaryStickyFold z-10"
     render-inactive-tabs
   >
     <HoppSmartTab
+      v-if="properties?.includes('params') ?? true"
       :id="'params'"
       :label="`${t('tab.parameters')}`"
-      :info="`${newActiveParamsCount$}`"
+      :info="`${newActiveParamsCount}`"
     >
-      <HttpParameters v-model="request.params" />
+      <HttpParameters v-model="request.params" :envs="envs" />
     </HoppSmartTab>
-    <HoppSmartTab :id="'bodyParams'" :label="`${t('tab.body')}`">
+    <HoppSmartTab
+      v-if="properties?.includes('bodyParams') ?? true"
+      :id="'bodyParams'"
+      :label="`${t('tab.body')}`"
+    >
       <HttpBody
         v-model:headers="request.headers"
         v-model:body="request.body"
-        @change-tab="changeTab"
+        :envs="envs"
+        @change-tab="changeOptionTab"
       />
     </HoppSmartTab>
     <HoppSmartTab
+      v-if="properties?.includes('headers') ?? true"
       :id="'headers'"
       :label="`${t('tab.headers')}`"
-      :info="`${newActiveHeadersCount$}`"
+      :info="`${newActiveHeadersCount}`"
     >
-      <HttpHeaders v-model="request" @change-tab="changeTab" />
-    </HoppSmartTab>
-    <HoppSmartTab :id="'authorization'" :label="`${t('tab.authorization')}`">
-      <HttpAuthorization v-model="request.auth" />
+      <HttpHeaders
+        v-model="request"
+        :inherited-properties="inheritedProperties"
+        :envs="envs"
+        @change-tab="changeOptionTab"
+      />
     </HoppSmartTab>
     <HoppSmartTab
+      v-if="properties?.includes('authorization') ?? true"
+      :id="'authorization'"
+      :label="`${t('tab.authorization')}`"
+    >
+      <HttpAuthorization
+        v-model="request.auth"
+        :inherited-properties="inheritedProperties"
+        :envs="envs"
+      />
+    </HoppSmartTab>
+    <HoppSmartTab
+      v-if="properties?.includes('preRequestScript') ?? true"
       :id="'preRequestScript'"
       :label="`${t('tab.pre_request_script')}`"
       :indicator="
@@ -40,6 +61,7 @@
       <HttpPreRequestScript v-model="request.preRequestScript" />
     </HoppSmartTab>
     <HoppSmartTab
+      v-if="properties?.includes('tests') ?? true"
       :id="'tests'"
       :label="`${t('tab.tests')}`"
       :indicator="
@@ -48,6 +70,15 @@
     >
       <HttpTests v-model="request.testScript" />
     </HoppSmartTab>
+    <HoppSmartTab
+      v-if="properties?.includes('requestVariables') ?? true"
+      :id="'requestVariables'"
+      :label="`${t('tab.variables')}`"
+      :info="`${newActiveRequestVariablesCount}`"
+      :align-last="true"
+    >
+      <HttpRequestVariables v-model="request.requestVariables" />
+    </HoppSmartTab>
   </HoppSmartTabs>
 </template>
 
@@ -55,52 +86,75 @@
 import { useI18n } from "@composables/i18n"
 import { HoppRESTRequest } from "@hoppscotch/data"
 import { useVModel } from "@vueuse/core"
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { defineActionHandler } from "~/helpers/actions"
+import { HoppInheritedProperty } from "~/helpers/types/HoppInheritedProperties"
+import { AggregateEnvironment } from "~/newstore/environments"
 
-export type RequestOptionTabs =
-  | "params"
-  | "bodyParams"
-  | "headers"
-  | "authorization"
-  | "preRequestScript"
-  | "tests"
+const VALID_OPTION_TABS = [
+  "params",
+  "bodyParams",
+  "headers",
+  "authorization",
+  "preRequestScript",
+  "tests",
+  "requestVariables",
+] as const
+
+export type RESTOptionTabs = (typeof VALID_OPTION_TABS)[number]
 
 const t = useI18n()
 
 // v-model integration with props and emit
-const props = defineProps<{ modelValue: HoppRESTRequest }>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: HoppRESTRequest
+    optionTab: RESTOptionTabs
+    properties?: string[]
+    inheritedProperties?: HoppInheritedProperty
+    envs?: AggregateEnvironment[]
+  }>(),
+  {
+    optionTab: "params",
+  }
+)
+
 const emit = defineEmits<{
   (e: "update:modelValue", value: HoppRESTRequest): void
+  (e: "update:optionTab", value: RESTOptionTabs): void
 }>()
 
 const request = useVModel(props, "modelValue", emit)
+const selectedOptionTab = useVModel(props, "optionTab", emit)
 
-const selectedOptionsTab = ref<RequestOptionTabs>("params")
-
-const changeTab = (e: RequestOptionTabs) => {
-  selectedOptionsTab.value = e
+const changeOptionTab = (e: RESTOptionTabs) => {
+  selectedOptionTab.value = e
 }
 
-const newActiveParamsCount$ = computed(() => {
-  const e = request.value.params.filter(
-    (x) => x.active && (x.key !== "" || x.value !== "")
+const newActiveParamsCount = computed(() => {
+  const count = request.value.params.filter(
+    (x) => x.active && (x.key || x.value)
   ).length
 
-  if (e === 0) return null
-  return `${e}`
+  return count ? count : null
 })
 
-const newActiveHeadersCount$ = computed(() => {
-  const e = request.value.headers.filter(
-    (x) => x.active && (x.key !== "" || x.value !== "")
+const newActiveHeadersCount = computed(() => {
+  const count = request.value.headers.filter(
+    (x) => x.active && (x.key || x.value)
   ).length
 
-  if (e === 0) return null
-  return `${e}`
+  return count ? count : null
+})
+
+const newActiveRequestVariablesCount = computed(() => {
+  const count = request.value.requestVariables.filter(
+    (x) => x.active && (x.key || x.value)
+  ).length
+  return count ? count : null
 })
 
 defineActionHandler("request.open-tab", ({ tab }) => {
-  selectedOptionsTab.value = tab as RequestOptionTabs
+  selectedOptionTab.value = tab as RESTOptionTabs
 })
 </script>

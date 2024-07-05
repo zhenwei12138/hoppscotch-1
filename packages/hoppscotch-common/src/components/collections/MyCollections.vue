@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col flex-1">
+  <div class="flex flex-1 flex-col">
     <div
-      class="sticky z-10 flex justify-between flex-1 border-b bg-primary border-dividerLight"
+      class="sticky z-10 flex flex-1 justify-between border-b border-dividerLight bg-primary"
       :style="
         saveRequest
           ? 'top: calc(var(--upper-primary-sticky-fold) - var(--line-height-body))'
@@ -25,13 +25,13 @@
         <HoppButtonSecondary
           v-if="!saveRequest"
           v-tippy="{ theme: 'tooltip' }"
-          :icon="IconArchive"
+          :icon="IconImport"
           :title="t('modal.import_export')"
           @click="emit('display-modal-import-export')"
         />
       </span>
     </div>
-    <div class="flex flex-col flex-1">
+    <div class="flex flex-1 flex-col">
       <HoppSmartTree :adapter="myAdapter">
         <template
           #content="{ node, toggleChildren, isOpen, highlightChildren }"
@@ -67,6 +67,13 @@
             @edit-collection="
               node.data.type === 'collections' &&
                 emit('edit-collection', {
+                  collectionIndex: node.id,
+                  collection: node.data.data.data,
+                })
+            "
+            @edit-properties="
+              node.data.type === 'collections' &&
+                emit('edit-properties', {
                   collectionIndex: node.id,
                   collection: node.data.data.data,
                 })
@@ -137,6 +144,13 @@
                 emit('edit-folder', {
                   folderPath: node.id,
                   folder: node.data.data.data,
+                })
+            "
+            @edit-properties="
+              node.data.type === 'folders' &&
+                emit('edit-properties', {
+                  collectionIndex: node.id,
+                  collection: node.data.data.data,
                 })
             "
             @export-data="
@@ -222,6 +236,12 @@
                   requestIndex: pathToIndex(node.id),
                 })
             "
+            @share-request="
+              node.data.type === 'requests' &&
+                emit('share-request', {
+                  request: node.data.data.data,
+                })
+            "
             @drag-request="
               dragRequest($event, {
                 folderPath: node.data.data.parentIndex,
@@ -248,7 +268,7 @@
             :text="`${t('state.nothing_found')} ‟${filterText}”`"
           >
             <template #icon>
-              <icon-lucide-search class="pb-2 opacity-75 svg-icons" />
+              <icon-lucide-search class="svg-icons opacity-75" />
             </template>
           </HoppSmartPlaceholder>
           <HoppSmartPlaceholder
@@ -257,12 +277,29 @@
             :alt="`${t('empty.collections')}`"
             :text="t('empty.collections')"
           >
-            <HoppButtonSecondary
-              :label="t('add.new')"
-              filled
-              outline
-              @click="emit('display-modal-add')"
-            />
+            <template #body>
+              <div class="flex flex-col items-center space-y-4">
+                <span class="text-center text-secondaryLight">
+                  {{ t("collection.import_or_create") }}
+                </span>
+                <div class="flex flex-col items-stretch gap-4">
+                  <HoppButtonPrimary
+                    :icon="IconImport"
+                    :label="t('import.title')"
+                    filled
+                    outline
+                    @click="emit('display-modal-import-export')"
+                  />
+                  <HoppButtonSecondary
+                    :icon="IconPlus"
+                    :label="t('add.new')"
+                    filled
+                    outline
+                    @click="emit('display-modal-add')"
+                  />
+                </div>
+              </div>
+            </template>
           </HoppSmartPlaceholder>
           <HoppSmartPlaceholder
             v-else-if="node.data.type === 'collections'"
@@ -270,26 +307,27 @@
             :alt="`${t('empty.collections')}`"
             :text="t('empty.collections')"
           >
-            <HoppButtonSecondary
-              :label="t('add.new')"
-              filled
-              outline
-              @click="
-                node.data.type === 'collections' &&
-                  emit('add-folder', {
-                    path: node.id,
-                    folder: node.data.data.data,
-                  })
-              "
-            />
+            <template #body>
+              <HoppButtonSecondary
+                :label="t('add.new')"
+                filled
+                outline
+                @click="
+                  node.data.type === 'collections' &&
+                    emit('add-folder', {
+                      path: node.id,
+                      folder: node.data.data.data,
+                    })
+                "
+              />
+            </template>
           </HoppSmartPlaceholder>
           <HoppSmartPlaceholder
             v-else-if="node.data.type === 'folders'"
             :src="`/images/states/${colorMode.value}/pack.svg`"
             :alt="`${t('empty.folder')}`"
             :text="t('empty.folder')"
-          >
-          </HoppSmartPlaceholder>
+          />
         </template>
       </HoppSmartTree>
     </div>
@@ -297,29 +335,27 @@
 </template>
 
 <script setup lang="ts">
-import IconArchive from "~icons/lucide/archive"
 import IconPlus from "~icons/lucide/plus"
 import IconHelpCircle from "~icons/lucide/help-circle"
+import IconImport from "~icons/lucide/folder-down"
 import { HoppCollection, HoppRESTRequest } from "@hoppscotch/data"
 import { computed, PropType, Ref, toRef } from "vue"
 import { GetMyTeamsQuery } from "~/helpers/backend/graphql"
-import {
-  ChildrenResult,
-  SmartTreeAdapter,
-} from "@hoppscotch/ui/dist/helpers/treeAdapter"
+import { ChildrenResult, SmartTreeAdapter } from "@hoppscotch/ui/helpers"
 import { useI18n } from "@composables/i18n"
 import { useColorMode } from "@composables/theming"
 import { pipe } from "fp-ts/function"
 import * as O from "fp-ts/Option"
 import { Picked } from "~/helpers/types/HoppPicked.js"
-import { currentActiveTab } from "~/helpers/rest/tab"
+import { useService } from "dioc/vue"
+import { RESTTabService } from "~/services/tab/rest"
 
 export type Collection = {
   type: "collections"
   isLastItem: boolean
   data: {
     parentIndex: null
-    data: HoppCollection<HoppRESTRequest>
+    data: HoppCollection
   }
 }
 
@@ -328,7 +364,7 @@ type Folder = {
   isLastItem: boolean
   data: {
     parentIndex: string
-    data: HoppCollection<HoppRESTRequest>
+    data: HoppCollection
   }
 }
 
@@ -355,7 +391,7 @@ type CollectionType =
 
 const props = defineProps({
   filteredCollections: {
-    type: Array as PropType<HoppCollection<HoppRESTRequest>[]>,
+    type: Array as PropType<HoppCollection[]>,
     default: () => [],
     required: true,
   },
@@ -387,28 +423,35 @@ const emit = defineEmits<{
     event: "add-request",
     payload: {
       path: string
-      folder: HoppCollection<HoppRESTRequest>
+      folder: HoppCollection
     }
   ): void
   (
     event: "add-folder",
     payload: {
       path: string
-      folder: HoppCollection<HoppRESTRequest>
+      folder: HoppCollection
     }
   ): void
   (
     event: "edit-collection",
     payload: {
       collectionIndex: string
-      collection: HoppCollection<HoppRESTRequest>
+      collection: HoppCollection
     }
   ): void
   (
     event: "edit-folder",
     payload: {
       folderPath: string
-      folder: HoppCollection<HoppRESTRequest>
+      folder: HoppCollection
+    }
+  ): void
+  (
+    event: "edit-properties",
+    payload: {
+      collectionIndex: string
+      collection: HoppCollection
     }
   ): void
   (
@@ -426,7 +469,7 @@ const emit = defineEmits<{
       request: HoppRESTRequest
     }
   ): void
-  (event: "export-data", payload: HoppCollection<HoppRESTRequest>): void
+  (event: "export-data", payload: HoppCollection): void
   (event: "remove-collection", payload: string): void
   (event: "remove-folder", payload: string): void
   (
@@ -443,6 +486,12 @@ const emit = defineEmits<{
       folderPath: string
       requestIndex: string
       isActive: boolean
+    }
+  ): void
+  (
+    event: "share-request",
+    payload: {
+      request: HoppRESTRequest
     }
   ): void
   (
@@ -511,16 +560,16 @@ const isSelected = ({
       props.picked.folderPath === folderPath &&
       props.picked.requestIndex === requestIndex
     )
-  } else {
-    return (
-      props.picked &&
-      props.picked.pickedType === "my-folder" &&
-      props.picked.folderPath === folderPath
-    )
   }
+  return (
+    props.picked &&
+    props.picked.pickedType === "my-folder" &&
+    props.picked.folderPath === folderPath
+  )
 }
 
-const active = computed(() => currentActiveTab.value.document.saveContext)
+const tabs = useService(RESTTabService)
+const active = computed(() => tabs.currentActiveTab.value.document.saveContext)
 
 const isActiveRequest = (folderPath: string, requestIndex: number) => {
   return pipe(
@@ -634,10 +683,10 @@ const updateCollectionOrder = (
 type MyCollectionNode = Collection | Folder | Requests
 
 class MyCollectionsAdapter implements SmartTreeAdapter<MyCollectionNode> {
-  constructor(public data: Ref<HoppCollection<HoppRESTRequest>[]>) {}
+  constructor(public data: Ref<HoppCollection[]>) {}
 
   navigateToFolderWithIndexPath(
-    collections: HoppCollection<HoppRESTRequest>[],
+    collections: HoppCollection[],
     indexPaths: number[]
   ) {
     if (indexPaths.length === 0) return null
@@ -645,7 +694,7 @@ class MyCollectionsAdapter implements SmartTreeAdapter<MyCollectionNode> {
     let target = collections[indexPaths.shift() as number]
 
     while (indexPaths.length > 0)
-      target = target.folders[indexPaths.shift() as number]
+      target = target?.folders[indexPaths.shift() as number]
 
     return target !== undefined ? target : null
   }
@@ -713,11 +762,10 @@ class MyCollectionsAdapter implements SmartTreeAdapter<MyCollectionNode> {
           status: "loaded",
           data: data,
         } as ChildrenResult<Folder | Requests>
-      } else {
-        return {
-          status: "loaded",
-          data: [],
-        }
+      }
+      return {
+        status: "loaded",
+        data: [],
       }
     })
   }

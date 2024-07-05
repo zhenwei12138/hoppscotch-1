@@ -31,6 +31,18 @@ export class User {
   isAdmin: boolean;
 
   @Field({
+    nullable: true,
+    description: 'Date when the user last logged in',
+  })
+  lastLoggedOn: Date;
+
+  @Field({
+    nullable: true,
+    description: 'Date when the user last interacted with the app',
+  })
+  lastActiveOn: Date;
+
+  @Field({
     description: 'Date when the user account was created',
   })
   createdOn: Date;
@@ -56,3 +68,22 @@ export enum SessionType {
 registerEnumType(SessionType, {
   name: 'SessionType',
 });
+
+@ObjectType()
+export class UserDeletionResult {
+  @Field(() => ID, {
+    description: 'UID of the user',
+  })
+  userUID: string;
+
+  @Field(() => Boolean, {
+    description: 'Flag to determine if user deletion was successful or not',
+  })
+  isDeleted: Boolean;
+
+  @Field({
+    nullable: true,
+    description: 'Error message if user deletion was not successful',
+  })
+  errorMessage: String;
+}

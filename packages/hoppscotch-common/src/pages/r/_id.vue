@@ -2,10 +2,10 @@
   <div class="flex flex-col items-center justify-between">
     <div
       v-if="invalidLink"
-      class="flex flex-col items-center justify-center flex-1"
+      class="flex flex-1 flex-col items-center justify-center"
     >
-      <icon-lucide-alert-triangle class="mb-2 opacity-75 svg-icons" />
-      <h1 class="text-center heading">
+      <icon-lucide-alert-triangle class="svg-icons mb-2 opacity-75" />
+      <h1 class="heading text-center">
         {{ t("error.invalid_link") }}
       </h1>
       <p class="mt-2 text-center">
@@ -20,20 +20,22 @@
         />
       </p>
     </div>
-    <div v-else class="flex flex-col items-center justify-center flex-1 p-4">
+    <div v-else class="flex flex-1 flex-col items-center justify-center p-4">
       <div
-        v-if="shortcodeDetails.loading"
-        class="flex flex-col items-center justify-center flex-1 p-4"
+        v-if="sharedRequestDetails.loading"
+        class="flex flex-1 flex-col items-center justify-center p-4"
       >
         <HoppSmartSpinner />
       </div>
       <div v-else>
         <div
-          v-if="!shortcodeDetails.loading && E.isLeft(shortcodeDetails.data)"
+          v-if="
+            !sharedRequestDetails.loading && E.isLeft(sharedRequestDetails.data)
+          "
           class="flex flex-col items-center p-4"
         >
-          <icon-lucide-alert-triangle class="mb-2 opacity-75 svg-icons" />
-          <h1 class="text-center heading">
+          <icon-lucide-alert-triangle class="svg-icons mb-2 opacity-75" />
+          <h1 class="heading text-center">
             {{ t("error.invalid_link") }}
           </h1>
           <p class="mt-2 text-center">
@@ -55,8 +57,11 @@
           </p>
         </div>
         <div
-          v-if="!shortcodeDetails.loading && E.isRight(shortcodeDetails.data)"
-          class="flex flex-col items-center justify-center flex-1 p-4"
+          v-if="
+            !sharedRequestDetails.loading &&
+            E.isRight(sharedRequestDetails.data)
+          "
+          class="flex flex-1 flex-col items-center justify-center p-4"
         >
           <h1 class="heading">
             {{ t("state.loading") }}
@@ -82,19 +87,22 @@ import {
 
 import IconHome from "~icons/lucide/home"
 import IconRefreshCW from "~icons/lucide/refresh-cw"
-import { createNewTab } from "~/helpers/rest/tab"
 import { getDefaultRESTRequest } from "~/helpers/rest/default"
 import { platform } from "~/platform"
+import { RESTTabService } from "~/services/tab/rest"
+import { useService } from "dioc/vue"
 
 const route = useRoute()
 const router = useRouter()
 
 const t = useI18n()
 
-const invalidLink = ref(false)
-const shortcodeID = ref("")
+const tabs = useService(RESTTabService)
 
-const shortcodeDetails = useGQLQuery<
+const invalidLink = ref(false)
+const sharedRequestID = ref("")
+
+const sharedRequestDetails = useGQLQuery<
   ResolveShortcodeQuery,
   ResolveShortcodeQueryVariables,
   ""
@@ -106,14 +114,14 @@ const shortcodeDetails = useGQLQuery<
 })
 
 watch(
-  () => shortcodeDetails.data,
+  () => sharedRequestDetails.data,
   () => addRequestToTab()
 )
 
 const addRequestToTab = () => {
-  if (shortcodeDetails.loading) return
+  if (sharedRequestDetails.loading) return
 
-  const data = shortcodeDetails.data
+  const data = sharedRequestDetails.data
 
   if (E.isRight(data)) {
     if (!data.right.shortcode?.request) {
@@ -127,7 +135,7 @@ const addRequestToTab = () => {
 
     const request: unknown = JSON.parse(data.right.shortcode?.request as string)
 
-    createNewTab({
+    tabs.createNewTab({
       request: safelyExtractRESTRequest(request, getDefaultRESTRequest()),
       isDirty: false,
     })
@@ -142,9 +150,9 @@ const reloadApplication = () => {
 
 onMounted(() => {
   if (typeof route.params.id === "string") {
-    shortcodeID.value = route.params.id
-    shortcodeDetails.execute()
+    sharedRequestID.value = route.params.id
+    sharedRequestDetails.execute()
   }
-  invalidLink.value = !shortcodeID.value
+  invalidLink.value = !sharedRequestID.value
 })
 </script>

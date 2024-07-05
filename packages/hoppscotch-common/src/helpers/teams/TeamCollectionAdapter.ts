@@ -1,6 +1,10 @@
 import * as E from "fp-ts/Either"
 import { BehaviorSubject, Subscription } from "rxjs"
-import { translateToNewRequest } from "@hoppscotch/data"
+import {
+  HoppRESTAuth,
+  HoppRESTHeader,
+  translateToNewRequest,
+} from "@hoppscotch/data"
 import { pull, remove } from "lodash-es"
 import { Subscription as WSubscription } from "wonka"
 import { runGQLQuery, runGQLSubscription } from "../backend/GQLClient"
@@ -21,6 +25,7 @@ import {
   TeamRequestOrderUpdatedDocument,
   TeamCollectionOrderUpdatedDocument,
 } from "~/helpers/backend/graphql"
+import { HoppInheritedProperty } from "../types/HoppInheritedProperties"
 
 const TEAMS_BACKEND_PAGE_SIZE = 10
 
@@ -319,7 +324,7 @@ export default class NewTeamCollectionAdapter {
 
       if (!parentCollection) return
 
-      if (parentCollection.children != null) {
+      if (parentCollection.children !== null) {
         parentCollection.children.push(collection)
       } else {
         parentCollection.children = [collection]
@@ -542,6 +547,7 @@ export default class NewTeamCollectionAdapter {
         children: null,
         requests: null,
         title: title,
+        data: null,
       },
       parentID ?? null
     )
@@ -693,6 +699,7 @@ export default class NewTeamCollectionAdapter {
           children: null,
           requests: null,
           title: result.right.teamCollectionAdded.title,
+          data: result.right.teamCollectionAdded.data ?? null,
         },
         result.right.teamCollectionAdded.parent?.id ?? null
       )
@@ -715,6 +722,7 @@ export default class NewTeamCollectionAdapter {
       this.updateCollection({
         id: result.right.teamCollectionUpdated.id,
         title: result.right.teamCollectionUpdated.title,
+        data: result.right.teamCollectionUpdated.data,
       })
     })
 
@@ -902,6 +910,86 @@ export default class NewTeamCollectionAdapter {
     )
   }
 
+  private async getCollectionChildren(
+    collection: TeamCollection
+  ): Promise<TeamCollection[]> {
+    const collections: TeamCollection[] = []
+
+    while (true) {
+      const data = await runGQLQuery({
+        query: GetCollectionChildrenDocument,
+        variables: {
+          collectionID: collection.id,
+          cursor:
+            collections.length > 0
+              ? collections[collections.length - 1].id
+              : undefined,
+        },
+      })
+
+      if (E.isLeft(data)) {
+        throw new Error(
+          `Child Collection Fetch Error for ${collection.id}: ${data.left}`
+        )
+      }
+
+      collections.push(
+        ...data.right.collection!.children.map(
+          (el) =>
+            <TeamCollection>{
+              id: el.id,
+              title: el.title,
+              data: el.data,
+              children: null,
+              requests: null,
+            }
+        )
+      )
+
+      if (data.right.collection!.children.length !== TEAMS_BACKEND_PAGE_SIZE)
+        break
+    }
+
+    return collections
+  }
+
+  private async getCollectionRequests(
+    collection: TeamCollection
+  ): Promise<TeamRequest[]> {
+    const requests: TeamRequest[] = []
+
+    while (true) {
+      const data = await runGQLQuery({
+        query: GetCollectionRequestsDocument,
+        variables: {
+          collectionID: collection.id,
+          cursor:
+            requests.length > 0 ? requests[requests.length - 1].id : undefined,
+        },
+      })
+
+      if (E.isLeft(data)) {
+        throw new Error(`Child Request Fetch Error for ${data}: ${data.left}`)
+      }
+
+      requests.push(
+        ...data.right.requestsInCollection.map<TeamRequest>((el) => {
+          return {
+            id: el.id,
+            collectionID: collection.id,
+            title: el.title,
+            request: translateToNewRequest(JSON.parse(el.request)),
+          }
+        })
+      )
+
+      if (data.right.requestsInCollection.length !== TEAMS_BACKEND_PAGE_SIZE)
+        break
+    }
+
+    return requests
+  }
+
   /**
    * Expands a collection on the tree
    *
@@ -918,99 +1006,139 @@ export default class NewTeamCollectionAdapter {
 
     if (!collection) return
 
-    if (collection.children != null) return
-
-    const collections: TeamCollection[] = []
+    if (collection.children !== null) return
 
     this.loadingCollections$.next([
       ...this.loadingCollections$.getValue(),
       collectionID,
     ])
 
-    while (true) {
-      const data = await runGQLQuery({
-        query: GetCollectionChildrenDocument,
-        variables: {
-          collectionID,
-          cursor:
-            collections.length > 0
-              ? collections[collections.length - 1].id
-              : undefined,
-        },
-      })
+    try {
+      const [collections, requests] = await Promise.all([
+        this.getCollectionChildren(collection),
+        this.getCollectionRequests(collection),
+      ])
 
-      if (E.isLeft(data)) {
-        this.loadingCollections$.next(
-          this.loadingCollections$.getValue().filter((x) => x !== collectionID)
-        )
+      collection.children = collections
+      collection.requests = requests
 
-        throw new Error(
-          `Child Collection Fetch Error for ${collectionID}: ${data.left}`
-        )
-      }
+      // Add to the entity ids set
+      collections.forEach((coll) => this.entityIDs.add(`collection-${coll.id}`))
+      requests.forEach((req) => this.entityIDs.add(`request-${req.id}`))
 
-      collections.push(
-        ...data.right.collection!.children.map(
-          (el) =>
-            <TeamCollection>{
-              id: el.id,
-              title: el.title,
-              children: null,
-              requests: null,
-            }
-        )
+      this.collections$.next(tree)
+    } finally {
+      this.loadingCollections$.next(
+        this.loadingCollections$.getValue().filter((x) => x !== collectionID)
       )
+    }
+  }
 
-      if (data.right.collection!.children.length !== TEAMS_BACKEND_PAGE_SIZE)
-        break
+  /**
+   * Used to obtain the inherited auth and headers for a given folder path, used for both REST and GraphQL team collections
+   * @param folderPath the path of the folder to cascade the auth from
+   * @returns the inherited auth and headers for the given folder path
+   */
+  public cascadeParentCollectionForHeaderAuth(folderPath: string) {
+    let auth: HoppInheritedProperty["auth"] = {
+      parentID: folderPath ?? "",
+      parentName: "",
+      inheritedAuth: {
+        authType: "none",
+        authActive: true,
+      },
+    }
+    const headers: HoppInheritedProperty["headers"] = []
+
+    if (!folderPath) return { auth, headers }
+
+    const path = folderPath.split("/")
+
+    // Check if the path is empty or invalid
+    if (!path || path.length === 0) {
+      console.error("Invalid path:", folderPath)
+      return { auth, headers }
     }
 
-    const requests: TeamRequest[] = []
+    // Loop through the path and get the last parent folder with authType other than 'inherit'
+    for (let i = 0; i < path.length; i++) {
+      const parentFolder = findCollInTree(this.collections$.value, path[i])
 
-    while (true) {
-      const data = await runGQLQuery({
-        query: GetCollectionRequestsDocument,
-        variables: {
-          collectionID,
-          cursor:
-            requests.length > 0 ? requests[requests.length - 1].id : undefined,
-        },
-      })
-
-      if (E.isLeft(data)) {
-        this.loadingCollections$.next(
-          this.loadingCollections$.getValue().filter((x) => x !== collectionID)
-        )
-
-        throw new Error(`Child Request Fetch Error for ${data}: ${data.left}`)
+      // Check if parentFolder is undefined or null
+      if (!parentFolder) {
+        console.error("Parent folder not found for path:", path)
+        return { auth, headers }
       }
 
-      requests.push(
-        ...data.right.requestsInCollection.map<TeamRequest>((el) => {
-          return {
-            id: el.id,
-            collectionID,
-            title: el.title,
-            request: translateToNewRequest(JSON.parse(el.request)),
+      const data: {
+        auth: HoppRESTAuth
+        headers: HoppRESTHeader[]
+      } = parentFolder.data
+        ? JSON.parse(parentFolder.data)
+        : {
+            auth: null,
+            headers: null,
+          }
+
+      if (!data.auth) {
+        data.auth = {
+          authType: "inherit",
+          authActive: true,
+        }
+        auth.parentID = path.slice(0, i + 1).join("/")
+        auth.parentName = parentFolder.title
+      }
+
+      if (!data.headers) data.headers = []
+
+      const parentFolderAuth = data.auth
+      const parentFolderHeaders = data.headers
+
+      if (
+        parentFolderAuth?.authType === "inherit" &&
+        path.slice(0, i + 1).length === 1
+      ) {
+        auth = {
+          parentID: path.slice(0, i + 1).join("/"),
+          parentName: parentFolder.title,
+          inheritedAuth: auth.inheritedAuth,
+        }
+      }
+
+      if (parentFolderAuth?.authType !== "inherit") {
+        auth = {
+          parentID: path.slice(0, i + 1).join("/"),
+          parentName: parentFolder.title,
+          inheritedAuth: parentFolderAuth,
+        }
+      }
+
+      // Update headers, overwriting duplicates by key
+      if (parentFolderHeaders) {
+        const activeHeaders = parentFolderHeaders.filter((h) => h.active)
+        activeHeaders.forEach((header) => {
+          const index = headers.findIndex(
+            (h) => h.inheritedHeader?.key === header.key
+          )
+          const currentPath = path.slice(0, i + 1).join("/")
+          if (index !== -1) {
+            // Replace the existing header with the same key
+            headers[index] = {
+              parentID: currentPath,
+              parentName: parentFolder.title,
+              inheritedHeader: header,
+            }
+          } else {
+            headers.push({
+              parentID: currentPath,
+              parentName: parentFolder.title,
+              inheritedHeader: header,
+            })
           }
         })
-      )
-
-      if (data.right.requestsInCollection.length !== TEAMS_BACKEND_PAGE_SIZE)
-        break
+      }
     }
 
-    collection.children = collections
-    collection.requests = requests
-
-    // Add to the entity ids set
-    collections.forEach((coll) => this.entityIDs.add(`collection-${coll.id}`))
-    requests.forEach((req) => this.entityIDs.add(`request-${req.id}`))
-
-    this.loadingCollections$.next(
-      this.loadingCollections$.getValue().filter((x) => x !== collectionID)
-    )
-
-    this.collections$.next(tree)
+    return { auth, headers }
   }
 }

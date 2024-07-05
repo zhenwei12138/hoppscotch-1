@@ -24,10 +24,12 @@ import {
   RefreshTokenPayload,
 } from 'src/types/AuthTokens';
 import { JwtService } from '@nestjs/jwt';
-import { AuthError } from 'src/types/AuthError';
+import { RESTError } from 'src/types/RESTError';
 import { AuthUser, IsAdmin } from 'src/types/AuthUser';
 import { VerificationToken } from '@prisma/client';
 import { Origin } from './helper';
+import { ConfigService } from '@nestjs/config';
+import { InfraConfigService } from 'src/infra-config/infra-config.service';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +38,8 @@ export class AuthService {
     private prismaService: PrismaService,
     private jwtService: JwtService,
     private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+    private infraConfigService: InfraConfigService,
   ) {}
 
   /**
@@ -46,10 +50,12 @@ export class AuthService {
    */
   private async generateMagicLinkTokens(user: AuthUser) {
     const salt = await bcrypt.genSalt(
-      parseInt(process.env.TOKEN_SALT_COMPLEXITY),
+      parseInt(this.configService.get('TOKEN_SALT_COMPLEXITY')),
     );
     const expiresOn = DateTime.now()
-      .plus({ hours: parseInt(process.env.MAGIC_LINK_TOKEN_VALIDITY) })
+      .plus({
+        hours: parseInt(this.configService.get('MAGIC_LINK_TOKEN_VALIDITY')),
+      })
       .toISO()
       .toString();
 
@@ -95,23 +101,23 @@ export class AuthService {
    */
   private async generateRefreshToken(userUid: string) {
     const refreshTokenPayload: RefreshTokenPayload = {
-      iss: process.env.VITE_BASE_URL,
+      iss: this.configService.get('VITE_BASE_URL'),
       sub: userUid,
-      aud: [process.env.VITE_BASE_URL],
+      aud: [this.configService.get('VITE_BASE_URL')],
     };
 
     const refreshToken = await this.jwtService.sign(refreshTokenPayload, {
-      expiresIn: process.env.REFRESH_TOKEN_VALIDITY, //7 Days
+      expiresIn: this.configService.get('REFRESH_TOKEN_VALIDITY'), //7 Days
     });
 
     const refreshTokenHash = await argon2.hash(refreshToken);
 
-    const updatedUser = await this.usersService.UpdateUserRefreshToken(
+    const updatedUser = await this.usersService.updateUserRefreshToken(
       refreshTokenHash,
       userUid,
     );
     if (E.isLeft(updatedUser))
-      return E.left(<AuthError>{
+      return E.left(<RESTError>{
         message: updatedUser.left,
         statusCode: HttpStatus.NOT_FOUND,
       });
@@ -127,9 +133,9 @@ export class AuthService {
    */
   async generateAuthTokens(userUid: string) {
     const accessTokenPayload: AccessTokenPayload = {
-      iss: process.env.VITE_BASE_URL,
+      iss: this.configService.get('VITE_BASE_URL'),
       sub: userUid,
-      aud: [process.env.VITE_BASE_URL],
+      aud: [this.configService.get('VITE_BASE_URL')],
     };
 
     const refreshToken = await this.generateRefreshToken(userUid);
@@ -137,7 +143,7 @@ export class AuthService {
 
     return E.right(<AuthTokens>{
       access_token: await this.jwtService.sign(accessTokenPayload, {
-        expiresIn: process.env.ACCESS_TOKEN_VALIDITY, //1 Day
+        expiresIn: this.configService.get('ACCESS_TOKEN_VALIDITY'), //1 Day
       }),
       refresh_token: refreshToken.right,
     });
@@ -218,18 +224,18 @@ export class AuthService {
     let url: string;
     switch (origin) {
       case Origin.ADMIN:
-        url = process.env.VITE_ADMIN_URL;
+        url = this.configService.get('VITE_ADMIN_URL');
         break;
       case Origin.APP:
-        url = process.env.VITE_BASE_URL;
+        url = this.configService.get('VITE_BASE_URL');
         break;
       default:
         // if origin is invalid by default set URL to Hoppscotch-App
-        url = process.env.VITE_BASE_URL;
+        url = this.configService.get('VITE_BASE_URL');
     }
 
     await this.mailerService.sendEmail(email, {
-      template: 'code-your-own',
+      template: 'user-invitation',
       variables: {
         inviteeEmail: email,
         magicLink: `${url}/enter?token=${generatedTokens.token}`,
@@ -249,7 +255,7 @@ export class AuthService {
    */
   async verifyMagicLinkTokens(
     magicLinkIDTokens: VerifyMagicDto,
-  ): Promise<E.Right<AuthTokens> | E.Left<AuthError>> {
+  ): Promise<E.Right<AuthTokens> | E.Left<RESTError>> {
     const passwordlessTokens = await this.validatePasswordlessTokens(
       magicLinkIDTokens,
     );
@@ -314,6 +320,8 @@ export class AuthService {
         statusCode: HttpStatus.NOT_FOUND,
       });
 
+    this.usersService.updateUserLastLoggedOn(passwordlessTokens.value.userUid);
+
     return E.right(tokens.right);
   }
 
@@ -367,7 +375,7 @@ export class AuthService {
     if (usersCount === 1) {
       const elevatedUser = await this.usersService.makeAdmin(user.uid);
       if (E.isLeft(elevatedUser))
-        return E.left(<AuthError>{
+        return E.left(<RESTError>{
           message: elevatedUser.left,
           statusCode: HttpStatus.NOT_FOUND,
         });
@@ -376,5 +384,9 @@ export class AuthService {
     }
 
     return E.right(<IsAdmin>{ isAdmin: false });
+  }
+
+  getAuthProviders() {
+    return this.infraConfigService.getAllowedAuthProviders();
   }
 }

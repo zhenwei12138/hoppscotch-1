@@ -42,12 +42,17 @@ export const handleError = <T extends HoppErrorCode>(error: HoppError<T>) => {
 
   switch (error.code) {
     case "FILE_NOT_FOUND":
-      ERROR_MSG = `File doesn't exists: ${error.path}`;
+      ERROR_MSG = `File doesn't exist: ${error.path}`;
       break;
     case "UNKNOWN_COMMAND":
       ERROR_MSG = `Unavailable command: ${error.command}`;
       break;
     case "MALFORMED_ENV_FILE":
+      ERROR_MSG = `The environment file is not of the correct format.`;
+      break;
+    case "BULK_ENV_FILE":
+      ERROR_MSG = `CLI doesn't support bulk environments export.`;
+      break;
     case "MALFORMED_COLLECTION":
       ERROR_MSG = `${error.path}\n${parseErrorData(error.data)}`;
       break;
@@ -58,7 +63,7 @@ export const handleError = <T extends HoppErrorCode>(error: HoppError<T>) => {
       ERROR_MSG = `Unable to parse -\n${error.data}`;
       break;
     case "INVALID_FILE_TYPE":
-      ERROR_MSG = `Please provide file of extension type: ${error.data}`;
+      ERROR_MSG = `Please provide file of extension type .json: ${error.data}`;
       break;
     case "REQUEST_ERROR":
     case "TEST_SCRIPT_ERROR":
@@ -76,6 +81,21 @@ export const handleError = <T extends HoppErrorCode>(error: HoppError<T>) => {
       break;
     case "TESTS_FAILING":
       ERROR_MSG = error.data;
+      break;
+    case "TOKEN_EXPIRED":
+      ERROR_MSG = `The specified access token is expired. Please provide a valid token: ${error.data}`;
+      break;
+    case "TOKEN_INVALID":
+      ERROR_MSG = `The specified access token is invalid. Please provide a valid token: ${error.data}`;
+      break;
+    case "INVALID_ID":
+      ERROR_MSG = `The specified collection/environment (ID or file path) is invalid or inaccessible. Please ensure the supplied ID or file path is correct: ${error.data}`;
+      break;
+    case "INVALID_SERVER_URL":
+      ERROR_MSG = `Please provide a valid SH instance server URL: ${error.data}`;
+      break;
+    case "SERVER_CONNECTION_REFUSED":
+      ERROR_MSG = `Unable to connect to the server. Please check your network connection or server instance URL and try again: ${error.data}`;
       break;
   }
 

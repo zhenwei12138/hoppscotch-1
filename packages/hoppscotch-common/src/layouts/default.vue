@@ -1,7 +1,7 @@
 <template>
-  <div class="flex w-screen h-screen">
+  <div class="flex h-screen w-screen">
     <Splitpanes class="no-splitter" :dbl-click-splitter="false" horizontal>
-      <Pane v-if="!zenMode" style="height: auto">
+      <Pane style="height: auto">
         <AppHeader />
       </Pane>
       <Pane :class="spacerClass" class="flex flex-1 !overflow-auto md:mb-0">
@@ -12,7 +12,7 @@
         >
           <Pane
             style="width: auto; height: auto"
-            class="!overflow-auto hidden md:flex md:flex-col"
+            class="hidden !overflow-auto md:flex md:flex-col"
           >
             <AppSidenav />
           </Pane>
@@ -23,10 +23,10 @@
               horizontal
             >
               <Pane class="flex flex-1 !overflow-auto">
-                <main class="flex flex-1 w-full" role="main">
+                <main class="flex w-full flex-1" role="main">
                   <RouterView
                     v-slot="{ Component }"
-                    class="flex flex-1 min-w-0"
+                    class="flex min-w-0 flex-1"
                   >
                     <Transition name="fade" mode="out-in" appear>
                       <component :is="Component" />
@@ -44,7 +44,7 @@
       <Pane
         v-else
         style="height: auto"
-        class="!overflow-auto flex flex-col fixed inset-x-0 bottom-0 z-10"
+        class="fixed inset-x-0 bottom-0 z-10 flex flex-col !overflow-auto"
       >
         <AppSidenav />
       </Pane>
@@ -61,27 +61,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, ref, watch } from "vue"
-import { breakpointsTailwind, useBreakpoints } from "@vueuse/core"
-import { Splitpanes, Pane } from "splitpanes"
-import "splitpanes/dist/splitpanes.css"
-import { RouterView, useRouter } from "vue-router"
 import { useSetting } from "@composables/settings"
-import { defineActionHandler } from "~/helpers/actions"
-import { hookKeybindingsListener } from "~/helpers/keybindings"
-import { applySetting } from "~/newstore/settings"
-import { getLocalConfig, setLocalConfig } from "~/newstore/localpersistence"
-import { useToast } from "~/composables/toast"
+import { breakpointsTailwind, useBreakpoints } from "@vueuse/core"
+import { useService } from "dioc/vue"
+import { Pane, Splitpanes } from "splitpanes"
+import "splitpanes/dist/splitpanes.css"
+import { computed, onBeforeMount, onMounted, ref, watch } from "vue"
+import { RouterView, useRouter } from "vue-router"
+
 import { useI18n } from "~/composables/i18n"
+import { useToast } from "~/composables/toast"
+import { InvocationTriggers, defineActionHandler } from "~/helpers/actions"
+import { hookKeybindingsListener } from "~/helpers/keybindings"
+import { applySetting, toggleSetting } from "~/newstore/settings"
+import { platform } from "~/platform"
+import { HoppSpotlightSessionEventData } from "~/platform/analytics"
+import { PersistenceService } from "~/services/persistence"
+import { SpotlightService } from "~/services/spotlight"
 
 const router = useRouter()
 
 const showSearch = ref(false)
 const showSupport = ref(false)
 
-const fontSize = useSetting("FONT_SIZE")
 const expandNavigation = useSetting("EXPAND_NAVIGATION")
-const zenMode = useSetting("ZEN_MODE")
 const rightSidebar = useSetting("SIDEBAR")
 const columnLayout = useSetting("COLUMN_LAYOUT")
 
@@ -91,6 +94,11 @@ const mdAndLarger = breakpoints.greater("md")
 const toast = useToast()
 const t = useI18n()
 
+const persistenceService = useService(PersistenceService)
+const spotlightService = useService(SpotlightService)
+
+const HAS_OPENED_SPOTLIGHT = useSetting("HAS_OPENED_SPOTLIGHT")
+
 onBeforeMount(() => {
   if (!mdAndLarger.value) {
     rightSidebar.value = false
@@ -99,15 +107,19 @@ onBeforeMount(() => {
 })
 
 onMounted(() => {
-  const cookiesAllowed = getLocalConfig("cookiesAllowed") === "yes"
-  if (!cookiesAllowed) {
+  const cookiesAllowed =
+    persistenceService.getLocalConfig("cookiesAllowed") === "yes"
+  const platformAllowsCookiePrompts =
+    platform.platformFeatureFlags.promptAsUsingCookies ?? true
+
+  if (!cookiesAllowed && platformAllowsCookiePrompts) {
     toast.show(`${t("app.we_use_cookies")}`, {
       duration: 0,
       action: [
         {
           text: `${t("action.learn_more")}`,
           onClick: (_, toastObject) => {
-            setLocalConfig("cookiesAllowed", "yes")
+            persistenceService.setLocalConfig("cookiesAllowed", "yes")
             toastObject.goAway(0)
             window
               .open("https://docs.hoppscotch.io/support/privacy", "_blank")
@@ -117,7 +129,7 @@ onMounted(() => {
         {
           text: `${t("action.dismiss")}`,
           onClick: (_, toastObject) => {
-            setLocalConfig("cookiesAllowed", "yes")
+            persistenceService.setLocalConfig("cookiesAllowed", "yes")
             toastObject.goAway(0)
           },
         },
@@ -133,27 +145,24 @@ watch(mdAndLarger, () => {
     columnLayout.value = true
   }
 })
+const spacerClass = computed(() =>
+  expandNavigation.value ? "spacer-small" : "spacer-expand"
+)
 
-const spacerClass = computed(() => {
-  if (fontSize.value === "small" && expandNavigation.value)
-    return "spacer-small"
-  if (fontSize.value === "medium" && expandNavigation.value)
-    return "spacer-medium"
-  if (fontSize.value === "large" && expandNavigation.value)
-    return "spacer-large"
-  if (
-    (fontSize.value === "small" ||
-      fontSize.value === "medium" ||
-      fontSize.value === "large") &&
-    !expandNavigation.value
-  )
-    return "spacer-expand"
+defineActionHandler("modals.search.toggle", (_, trigger) => {
+  const triggerMethodMap: Record<
+    InvocationTriggers,
+    HoppSpotlightSessionEventData["method"]
+  > = {
+    keypress: "keyboard-shortcut",
+    mouseclick: "click-spotlight-bar",
+  }
+  spotlightService.setAnalyticsData({
+    method: triggerMethodMap[trigger as InvocationTriggers],
+  })
 
-  return ""
-})
-
-defineActionHandler("modals.search.toggle", () => {
   showSearch.value = !showSearch.value
+  !HAS_OPENED_SPOTLIGHT.value && toggleSetting("HAS_OPENED_SPOTLIGHT")
 })
 
 defineActionHandler("modals.support.toggle", () => {

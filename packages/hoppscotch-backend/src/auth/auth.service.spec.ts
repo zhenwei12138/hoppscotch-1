@@ -21,15 +21,26 @@ import { VerifyMagicDto } from './dto/verify-magic.dto';
 import { DateTime } from 'luxon';
 import * as argon2 from 'argon2';
 import * as E from 'fp-ts/Either';
+import { ConfigService } from '@nestjs/config';
+import { InfraConfigService } from 'src/infra-config/infra-config.service';
 
 const mockPrisma = mockDeep<PrismaService>();
 const mockUser = mockDeep<UserService>();
 const mockJWT = mockDeep<JwtService>();
 const mockMailer = mockDeep<MailerService>();
+const mockConfigService = mockDeep<ConfigService>();
+const mockInfraConfigService = mockDeep<InfraConfigService>();
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-const authService = new AuthService(mockUser, mockPrisma, mockJWT, mockMailer);
+const authService = new AuthService(
+  mockUser,
+  mockPrisma,
+  mockJWT,
+  mockMailer,
+  mockConfigService,
+  mockInfraConfigService,
+);
 
 const currentTime = new Date();
 
@@ -40,6 +51,8 @@ const user: AuthUser = {
   photoURL: 'https://en.wikipedia.org/wiki/Dwight_Schrute',
   isAdmin: false,
   refreshToken: 'hbfvdkhjbvkdvdfjvbnkhjb',
+  lastLoggedOn: currentTime,
+  lastActiveOn: currentTime,
   createdOn: currentTime,
   currentGQLSession: {},
   currentRESTSession: {},
@@ -91,6 +104,8 @@ describe('signInMagicLink', () => {
     mockUser.createUserViaMagicLink.mockResolvedValue(user);
     // create new entry in VerificationToken table
     mockPrisma.verificationToken.create.mockResolvedValueOnce(passwordlessData);
+    // Read env variable 'MAGIC_LINK_TOKEN_VALIDITY' from config service
+    mockConfigService.get.mockReturnValue('3');
 
     const result = await authService.signInMagicLink(
       'dwight@dundermifflin.com',
@@ -159,9 +174,11 @@ describe('verifyMagicLinkTokens', () => {
     // generateAuthTokens
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(E.right(user));
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(E.right(user));
     // deletePasswordlessVerificationToken
     mockPrisma.verificationToken.delete.mockResolvedValueOnce(passwordlessData);
+    // usersService.updateUserLastLoggedOn
+    mockUser.updateUserLastLoggedOn.mockResolvedValue(E.right(true));
 
     const result = await authService.verifyMagicLinkTokens(magicLinkVerify);
     expect(result).toEqualRight({
@@ -184,9 +201,11 @@ describe('verifyMagicLinkTokens', () => {
     // generateAuthTokens
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(E.right(user));
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(E.right(user));
     // deletePasswordlessVerificationToken
     mockPrisma.verificationToken.delete.mockResolvedValueOnce(passwordlessData);
+    // usersService.updateUserLastLoggedOn
+    mockUser.updateUserLastLoggedOn.mockResolvedValue(E.right(true));
 
     const result = await authService.verifyMagicLinkTokens(magicLinkVerify);
     expect(result).toEqualRight({
@@ -226,7 +245,7 @@ describe('verifyMagicLinkTokens', () => {
     // generateAuthTokens
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(
       E.left(USER_NOT_FOUND),
     );
 
@@ -251,7 +270,7 @@ describe('verifyMagicLinkTokens', () => {
     // generateAuthTokens
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(E.right(user));
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(E.right(user));
     // deletePasswordlessVerificationToken
     mockPrisma.verificationToken.delete.mockRejectedValueOnce('RecordNotFound');
 
@@ -267,7 +286,7 @@ describe('generateAuthTokens', () => {
   test('Should successfully generate tokens with valid inputs', async () => {
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(E.right(user));
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(E.right(user));
 
     const result = await authService.generateAuthTokens(user.uid);
     expect(result).toEqualRight({
@@ -279,7 +298,7 @@ describe('generateAuthTokens', () => {
   test('Should throw USER_NOT_FOUND when updating refresh tokens fails', async () => {
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(
       E.left(USER_NOT_FOUND),
     );
 
@@ -306,7 +325,7 @@ describe('refreshAuthTokens', () => {
     // generateAuthTokens
     mockJWT.sign.mockReturnValue(user.refreshToken);
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(
       E.left(USER_NOT_FOUND),
     );
 
@@ -335,7 +354,7 @@ describe('refreshAuthTokens', () => {
     // generateAuthTokens
     mockJWT.sign.mockReturnValue('sdhjcbjsdhcbshjdcb');
     // UpdateUserRefreshToken
-    mockUser.UpdateUserRefreshToken.mockResolvedValueOnce(
+    mockUser.updateUserRefreshToken.mockResolvedValueOnce(
       E.right({
         ...user,
         refreshToken: 'sdhjcbjsdhcbshjdcb',

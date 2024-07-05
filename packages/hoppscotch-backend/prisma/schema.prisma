@@ -43,6 +43,7 @@ model TeamInvitation {
 model TeamCollection {
   id         String           @id @default(cuid())
   parentID   String?
+  data       Json?
   parent     TeamCollection?  @relation("TeamCollectionChildParent", fields: [parentID], references: [id])
   children   TeamCollection[] @relation("TeamCollectionChildParent")
   requests   TeamRequest[]
@@ -68,10 +69,13 @@ model TeamRequest {
 }
 
 model Shortcode {
-  id         String   @id
-  request    Json
-  creatorUid String?
-  createdOn  DateTime @default(now())
+  id              String   @id @unique
+  request         Json
+  embedProperties Json?
+  creatorUid      String?
+  User            User?    @relation(fields: [creatorUid], references: [uid])
+  createdOn       DateTime @default(now())
+  updatedOn       DateTime @default(now()) @updatedAt
 
   @@unique(fields: [id, creatorUid], name: "creator_uid_shortcode_unique")
 }
@@ -85,23 +89,27 @@ model TeamEnvironment {
 }
 
 model User {
-  uid                String              @id @default(cuid())
-  displayName        String?
-  email              String?             @unique
-  photoURL           String?
-  isAdmin            Boolean             @default(false)
-  refreshToken       String?
-  providerAccounts   Account[]
-  VerificationToken  VerificationToken[]
-  settings           UserSettings?
-  UserHistory        UserHistory[]
-  UserEnvironments   UserEnvironment[]
-  userCollections    UserCollection[]
-  userRequests       UserRequest[]
-  currentRESTSession Json?
-  currentGQLSession  Json?
-  createdOn          DateTime            @default(now()) @db.Timestamp(3)
-  invitedUsers       InvitedUsers[]
+  uid                  String                @id @default(cuid())
+  displayName          String?
+  email                String?               @unique
+  photoURL             String?
+  isAdmin              Boolean               @default(false)
+  refreshToken         String?
+  providerAccounts     Account[]
+  VerificationToken    VerificationToken[]
+  settings             UserSettings?
+  UserHistory          UserHistory[]
+  UserEnvironments     UserEnvironment[]
+  userCollections      UserCollection[]
+  userRequests         UserRequest[]
+  currentRESTSession   Json?
+  currentGQLSession    Json?
+  lastLoggedOn         DateTime?             @db.Timestamp(3)
+  lastActiveOn         DateTime?             @db.Timestamp(3)
+  createdOn            DateTime              @default(now()) @db.Timestamp(3)
+  invitedUsers         InvitedUsers[]
+  shortcodes           Shortcode[]
+  personalAccessTokens PersonalAccessToken[]
 }
 
 model Account {
@@ -192,6 +200,7 @@ model UserCollection {
   userUid    String
   user       User             @relation(fields: [userUid], references: [uid], onDelete: Cascade)
   title      String
+  data       Json?
   orderIndex Int
   type       ReqType
   createdOn  DateTime         @default(now()) @db.Timestamp(3)
@@ -202,4 +211,24 @@ enum TeamMemberRole {
   OWNER
   VIEWER
   EDITOR
+}
+
+model InfraConfig {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  value     String?
+  active    Boolean  @default(true) // Use case: Let's say, Admin wants to disable Google SSO, but doesn't want to delete the config
+  createdOn DateTime @default(now()) @db.Timestamp(3)
+  updatedOn DateTime @updatedAt @db.Timestamp(3)
+}
+
+model PersonalAccessToken {
+  id        String    @id @default(cuid())
+  userUid   String
+  user      User      @relation(fields: [userUid], references: [uid], onDelete: Cascade)
+  label     String
+  token     String    @unique @default(uuid())
+  expiresOn DateTime? @db.Timestamp(3)
+  createdOn DateTime  @default(now()) @db.Timestamp(3)
+  updatedOn DateTime  @updatedAt @db.Timestamp(3)
 }

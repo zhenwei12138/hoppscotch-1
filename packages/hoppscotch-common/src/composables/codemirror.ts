@@ -4,6 +4,7 @@ import {
   ViewPlugin,
   ViewUpdate,
   placeholder,
+  tooltips,
 } from "@codemirror/view"
 import {
   Extension,
@@ -44,6 +45,8 @@ import { invokeAction } from "~/helpers/actions"
 import { useDebounceFn } from "@vueuse/core"
 // TODO: Migrate from legacy mode
 
+import * as E from "fp-ts/Either"
+
 type ExtendedEditorConfig = {
   mode: string
   placeholder: string
@@ -61,8 +64,13 @@ type CodeMirrorOptions = {
 
   additionalExts?: Extension[]
 
+  contextMenuEnabled?: boolean
+
   // callback on editor update
   onUpdate?: (view: ViewUpdate) => void
+
+  // callback on view initialization
+  onInit?: (view: EditorView) => void
 }
 
 const hoppCompleterExt = (completer: Completer): Extension => {
@@ -160,6 +168,21 @@ const getLanguage = (langMime: string): Language | null => {
   return null
 }
 
+const formatXML = (doc: string) => {
+  try {
+    const formatted = xmlFormat(doc, {
+      indentation: "  ",
+      collapseContent: true,
+      lineSeparator: "\n",
+      whiteSpaceAtEndOfSelfclosingTag: true,
+    })
+
+    return E.right(formatted)
+  } catch (e) {
+    return E.left(e)
+  }
+}
+
 /**
  * Uses xml-formatter to format the XML document
  * @param doc Document to parse
@@ -171,14 +194,11 @@ const parseDoc = (
   langMime: string
 ): string | undefined => {
   if (langMime === "application/xml" && doc) {
-    return xmlFormat(doc, {
-      indentation: "  ",
-      collapseContent: true,
-      lineSeparator: "\n",
-    })
-  } else {
-    return doc
+    const xmlFormatingResult = formatXML(doc)
+    if (E.isRight(xmlFormatingResult)) return xmlFormatingResult.right
   }
+
+  return doc
 }
 
 const getEditorLanguage = (
@@ -191,8 +211,13 @@ export function useCodemirror(
   el: Ref<any | null>,
   value: Ref<string | undefined>,
   options: CodeMirrorOptions
-): { cursor: Ref<{ line: number; ch: number }> } {
+): {
+  cursor: Ref<{ line: number; ch: number }>
+} {
   const { subscribeToStream } = useStreamSubscriber()
+
+  // Set default value for contextMenuEnabled if not provided
+  options.contextMenuEnabled = options.contextMenuEnabled ?? true
 
   const additionalExts = new Compartment()
   const language = new Compartment()
@@ -216,6 +241,41 @@ export function useCodemirror(
     ? new HoppEnvironmentPlugin(subscribeToStream, view)
     : null
 
+  function handleTextSelection() {
+    const selection = view.value?.state.selection.main
+    if (selection) {
+      const { from, to } = selection
+      if (from === to) return
+      const text = view.value?.state.doc.sliceString(from, to)
+      const coords = view.value?.coordsAtPos(from)
+      const top = coords?.top ?? 0
+      const left = coords?.left ?? 0
+      if (text?.trim()) {
+        invokeAction("contextmenu.open", {
+          position: {
+            top,
+            left,
+          },
+          text,
+        })
+      } else {
+        invokeAction("contextmenu.open", {
+          position: {
+            top,
+            left,
+          },
+          text: null,
+        })
+      }
+    }
+  }
+
+  // Debounce to prevent double click from selecting the word
+  const debouncedTextSelection = (time: number) =>
+    useDebounceFn(() => {
+      handleTextSelection()
+    }, time)
+
   const initView = (el: any) => {
     if (el) platform.ui?.onCodemirrorInstanceMount?.(el)
 
@@ -223,43 +283,15 @@ export function useCodemirror(
       basicSetup,
       baseTheme,
       syntaxHighlighting(baseHighlightStyle, { fallback: true }),
+
       ViewPlugin.fromClass(
         class {
           update(update: ViewUpdate) {
-            function handleTextSelection() {
-              const selection = view.value?.state.selection.main
-              if (selection) {
-                const from = selection.from
-                const to = selection.to
-                const text = view.value?.state.doc.sliceString(from, to)
-                const { top, left } = view.value?.coordsAtPos(from)
-                if (text) {
-                  invokeAction("contextmenu.open", {
-                    position: {
-                      top,
-                      left,
-                    },
-                    text,
-                  })
-                } else {
-                  invokeAction("contextmenu.open", {
-                    position: {
-                      top,
-                      left,
-                    },
-                    text: null,
-                  })
-                }
-              }
+            // Only add event listeners if context menu is enabled in the editor
+            if (options.contextMenuEnabled) {
+              el.addEventListener("mouseup", debouncedTextSelection(140))
+              el.addEventListener("keyup", debouncedTextSelection(140))
             }
-
-            // Debounce to prevent double click from selecting the word
-            const debounceFn = useDebounceFn(() => {
-              handleTextSelection()
-            }, 140)
-
-            el.addEventListener("mouseup", debounceFn)
-            el.addEventListener("keyup", debounceFn)
 
             if (options.onUpdate) {
               options.onUpdate(update)
@@ -296,6 +328,18 @@ export function useCodemirror(
           }
         }
       ),
+
+      EditorView.domEventHandlers({
+        scroll(event, view) {
+          // HACK: This is a workaround to fix the issue in CodeMirror where the content doesn't load when the editor is not in view.
+          view.requestMeasure()
+
+          if (event.target && options.contextMenuEnabled) {
+            // Debounce to make the performance better
+            debouncedTextSelection(30)()
+          }
+        },
+      }),
       EditorView.updateListener.of((update) => {
         if (options.extendedEditorConfig.readOnly) {
           update.view.contentDOM.inputMode = "none"
@@ -330,6 +374,10 @@ export function useCodemirror(
           run: indentLess,
         },
       ]),
+      tooltips({
+        parent: document.body,
+        position: "absolute",
+      }),
       EditorView.contentAttributes.of({ "data-enable-grammarly": "false" }),
       additionalExts.of(options.additionalExts ?? []),
     ]
@@ -343,6 +391,8 @@ export function useCodemirror(
         extensions,
       }),
     })
+
+    options.onInit?.(view.value)
   }
 
   onMounted(() => {

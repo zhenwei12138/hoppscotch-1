@@ -20,6 +20,11 @@ export type UIPlatformDef = {
   appHeader?: {
     paddingTop?: Ref<string>
     paddingLeft?: Ref<string>
+
+    /**
+     * A function which is called when the header area of the app receives a click event
+     */
+    onHeaderAreaClick?: () => void
   }
   onCodemirrorInstanceMount?: (element: HTMLElement) => void
 
@@ -33,4 +38,14 @@ export type UIPlatformDef = {
    * Additional Support Options menu items shown in the app header
    */
   additionalSupportOptionsMenuItems?: HoppSupportOptionsMenuItem[]
+
+  /**
+   * Additional Settings Section components in the settings page
+   */
+  additionalSettingsSections?: Component[]
+
+  /**
+   * Additional profile Section components in the profile page
+   */
+  additionalProfileSections?: Component[]
 }

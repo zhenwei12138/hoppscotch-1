@@ -1,5 +1,6 @@
 import { GQLHeader, HoppGQLAuth, makeGQLRequest } from "@hoppscotch/data"
 import { OperationType } from "@urql/core"
+import * as E from "fp-ts/Either"
 import {
   GraphQLEnumType,
   GraphQLInputObjectType,
@@ -10,12 +11,14 @@ import {
   getIntrospectionQuery,
   printSchema,
 } from "graphql"
-import { computed, reactive, ref } from "vue"
-import { addGraphqlHistoryEntry, makeGQLHistoryEntry } from "~/newstore/history"
-import { currentTabID } from "./tab"
+import { Component, computed, reactive, ref } from "vue"
 import { getService } from "~/modules/dioc"
+import { getI18n } from "~/modules/i18n"
+
+import { addGraphqlHistoryEntry, makeGQLHistoryEntry } from "~/newstore/history"
+
 import { InterceptorService } from "~/services/interceptor.service"
-import * as E from "fp-ts/Either"
+import { GQLTabService } from "~/services/tab/graphql"
 
 const GQL_SCHEMA_POLL_INTERVAL = 7000
 
@@ -30,13 +33,23 @@ type RunQueryOptions = {
   operationType: OperationType
 }
 
-export type GQLResponseEvent = {
-  time: number
-  operationName: string | undefined
-  operationType: OperationType
-  data: string
-  rawQuery?: RunQueryOptions
-}
+export type GQLResponseEvent =
+  | {
+      type: "response"
+      time: number
+      operationName: string | undefined
+      operationType: OperationType
+      data: string
+      rawQuery?: RunQueryOptions
+    }
+  | {
+      type: "error"
+      error: {
+        type: string
+        message: string
+        component?: Component
+      }
+    }
 
 export type ConnectionState = "CONNECTING" | "CONNECTED" | "DISCONNECTED"
 export type SubscriptionState = "SUBSCRIBING" | "SUBSCRIBED" | "UNSUBSCRIBED"
@@ -59,13 +72,22 @@ type Connection = {
   subscriptionState: Map<string, SubscriptionState>
   socket: WebSocket | undefined
   schema: GraphQLSchema | null
+  error?: {
+    type: string
+    message: (t: ReturnType<typeof getI18n>) => string
+    component?: Component
+  } | null
 }
+
+const tabs = getService(GQLTabService)
+const currentTabID = computed(() => tabs.currentTabID.value)
 
 export const connection = reactive<Connection>({
   state: "DISCONNECTED",
   subscriptionState: new Map<string, SubscriptionState>(),
   socket: undefined,
   schema: null,
+  error: null,
 })
 
 export const schema = computed(() => connection.schema)
@@ -197,7 +219,19 @@ const getSchema = async (url: string, headers: GQLHeader[]) => {
     const res = await interceptorService.runRequest(reqOptions).response
 
     if (E.isLeft(res)) {
-      console.error(res.left)
+      if (
+        res.left !== "cancellation" &&
+        res.left.error === "NO_PW_EXT_HOOK" &&
+        res.left.humanMessage
+      ) {
+        connection.error = {
+          type: res.left.error,
+          message: (t: ReturnType<typeof getI18n>) =>
+            res.left.humanMessage.description(t),
+          component: res.left.component,
+        }
+      }
+
       throw new Error(res.left.toString())
     }
 
@@ -213,6 +247,7 @@ const getSchema = async (url: string, headers: GQLHeader[]) => {
     const schema = buildClientSchema(introspectResponse.data)
 
     connection.schema = schema
+    connection.error = null
   } catch (e: any) {
     console.error(e)
     disconnect()
@@ -234,13 +269,21 @@ export const runGQLOperation = async (options: RunQueryOptions) => {
       const username = auth.username
       const password = auth.password
       finalHeaders.Authorization = `Basic ${btoa(`${username}:${password}`)}`
-    } else if (auth.authType === "bearer" || auth.authType === "oauth-2") {
+    } else if (auth.authType === "bearer") {
       finalHeaders.Authorization = `Bearer ${auth.token}`
+    } else if (auth.authType === "oauth-2") {
+      const { addTo } = auth
+
+      if (addTo === "HEADERS") {
+        finalHeaders.Authorization = `Bearer ${auth.grantTypeInfo.token}`
+      } else if (addTo === "QUERY_PARAMS") {
+        params["access_token"] = auth.grantTypeInfo.token
+      }
     } else if (auth.authType === "api-key") {
       const { key, value, addTo } = auth
-      if (addTo === "Headers") {
+      if (addTo === "HEADERS") {
         finalHeaders[key] = value
-      } else if (addTo === "Query params") {
+      } else if (addTo === "QUERY_PARAMS") {
         params[key] = value
       }
     }
@@ -268,14 +311,25 @@ export const runGQLOperation = async (options: RunQueryOptions) => {
   }
 
   if (operationType === "subscription") {
-    return runSubscription(options)
+    return runSubscription(options, finalHeaders)
   }
 
   const interceptorService = getService(InterceptorService)
   const result = await interceptorService.runRequest(reqOptions).response
 
   if (E.isLeft(result)) {
-    console.error(result.left)
+    if (
+      result.left !== "cancellation" &&
+      result.left.error === "NO_PW_EXT_HOOK" &&
+      result.left.humanMessage
+    ) {
+      connection.error = {
+        type: result.left.error,
+        message: (t: ReturnType<typeof getI18n>) =>
+          result.left.humanMessage.description(t),
+        component: result.left.component,
+      }
+    }
     throw new Error(result.left.toString())
   }
 
@@ -287,6 +341,7 @@ export const runGQLOperation = async (options: RunQueryOptions) => {
     .replace(/\0+$/, "")
 
   gqlMessageEvent.value = {
+    type: "response",
     time: Date.now(),
     operationName: operationName ?? "query",
     data: responseText,
@@ -294,12 +349,19 @@ export const runGQLOperation = async (options: RunQueryOptions) => {
     operationType,
   }
 
+  if (connection.state !== "CONNECTED") {
+    connection.state = "CONNECTED"
+  }
+
   addQueryToHistory(options, responseText)
 
   return responseText
 }
 
-export const runSubscription = (options: RunQueryOptions) => {
+export const runSubscription = (
+  options: RunQueryOptions,
+  headers?: Record<string, string>
+) => {
   const { url, query, operationName } = options
   const wsUrl = url.replace(/^http/, "ws")
 
@@ -309,10 +371,11 @@ export const runSubscription = (options: RunQueryOptions) => {
 
   connection.socket.onopen = (event) => {
     console.log("WebSocket is open now.", event)
+
     connection.socket?.send(
       JSON.stringify({
         type: GQL.CONNECTION_INIT,
-        payload: {},
+        payload: headers ?? {},
       })
     )
 
@@ -343,6 +406,7 @@ export const runSubscription = (options: RunQueryOptions) => {
       }
       case GQL.DATA: {
         gqlMessageEvent.value = {
+          type: "response",
           time: Date.now(),
           operationName,
           data: JSON.stringify(data.payload),

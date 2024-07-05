@@ -2,6 +2,7 @@ import * as E from "fp-ts/Either"
 import {
   Interceptor,
   InterceptorError,
+  NetworkResponse,
   RequestRunResult,
 } from "../../../services/interceptor.service"
 import axios, { AxiosRequestConfig, CancelToken } from "axios"
@@ -51,7 +52,7 @@ async function runRequest(
 
     const timeEnd = Date.now()
 
-    return E.right({
+    return E.right(<NetworkResponse>{
       ...res,
       config: {
         timeData: {
@@ -64,7 +65,7 @@ async function runRequest(
     const timeEnd = Date.now()
 
     if (axios.isAxiosError(e) && e.response) {
-      return E.right({
+      return E.right(<NetworkResponse>{
         ...e.response,
         config: {
           timeData: {
@@ -75,15 +76,14 @@ async function runRequest(
       })
     } else if (axios.isCancel(e)) {
       return E.left("cancellation")
-    } else {
-      return E.left(<InterceptorError>{
-        humanMessage: {
-          heading: (t) => t("error.network_fail"),
-          description: (t) => t("helpers.network_fail"),
-        },
-        error: e,
-      })
     }
+    return E.left(<InterceptorError>{
+      humanMessage: {
+        heading: (t) => t("error.network_fail"),
+        description: (t) => t("helpers.network_fail"),
+      },
+      error: e,
+    })
   }
 }
 

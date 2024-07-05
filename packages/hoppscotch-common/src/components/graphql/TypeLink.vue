@@ -7,38 +7,25 @@
   </span>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue"
-import { GraphQLScalarType } from "graphql"
+<script setup lang="ts">
+import { GraphQLScalarType, GraphQLType, getNamedType } from "graphql"
+import { computed } from "vue"
 
-export default defineComponent({
-  props: {
-    // eslint-disable-next-line vue/require-default-prop
-    gqlType: null,
-    // (typeName: string) => void
-    // eslint-disable-next-line vue/require-default-prop
-    jumpTypeCallback: Function,
-  },
+const props = defineProps<{
+  gqlType: GraphQLType
+}>()
 
-  computed: {
-    typeString() {
-      return `${this.gqlType}`
-    },
-    isScalar() {
-      return this.resolveRootType(this.gqlType) instanceof GraphQLScalarType
-    },
-  },
+const emit = defineEmits<{
+  (e: "jump-to-type", type: GraphQLType): void
+}>()
 
-  methods: {
-    jumpToType() {
-      if (this.isScalar) return
-      this.jumpTypeCallback(this.gqlType)
-    },
-    resolveRootType(type) {
-      let t = type
-      while (t.ofType != null) t = t.ofType
-      return t
-    },
-  },
+const typeString = computed(() => `${props.gqlType}`)
+const isScalar = computed(() => {
+  return getNamedType(props.gqlType) instanceof GraphQLScalarType
 })
+
+function jumpToType() {
+  if (isScalar.value) return
+  emit("jump-to-type", props.gqlType)
+}
 </script>

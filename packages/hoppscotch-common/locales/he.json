@@ -1,14 +1,17 @@
 {
   "action": {
+    "add": "Add",
     "autoscroll": "Autoscroll",
     "cancel": "לְבַטֵל",
     "choose_file": "בחר קובץ",
     "clear": "ברור",
     "clear_all": "נקה הכל",
+    "clear_history": "Clear all History",
     "close": "Close",
     "connect": "לְחַבֵּר",
     "connecting": "Connecting",
     "copy": "עותק",
+    "create": "Create",
     "delete": "לִמְחוֹק",
     "disconnect": "לְנַתֵק",
     "dismiss": "לשחרר",
@@ -30,13 +33,16 @@
     "open_workspace": "Open workspace",
     "paste": "Paste",
     "prettify": "לְיַפּוֹת",
+    "properties": "Properties",
     "remove": "לְהַסִיר",
+    "rename": "Rename",
     "restore": "לשחזר",
     "save": "להציל",
     "scroll_to_bottom": "Scroll to bottom",
     "scroll_to_top": "Scroll to top",
     "search": "לחפש",
     "send": "לִשְׁלוֹחַ",
+    "share": "Share",
     "start": "הַתחָלָה",
     "starting": "Starting",
     "stop": "תפסיק",
@@ -55,7 +61,9 @@
   "app": {
     "chat_with_us": "שוחח עימנו",
     "contact_us": "צור קשר",
+    "cookies": "Cookies",
     "copy": "עותק",
+    "copy_interface_type": "Copy interface type",
     "copy_user_id": "Copy User Auth Token",
     "developer_option": "Developer options",
     "developer_option_description": "Developer tools which helps in development and maintenance of Hoppscotch.",
@@ -71,12 +79,15 @@
     "keyboard_shortcuts": "קיצורי דרך במקלדת",
     "name": "הופסקוץ '",
     "new_version_found": "נמצאה גרסה חדשה. רענן לעדכון.",
+    "open_in_hoppscotch": "Open in Hoppscotch",
     "options": "Options",
     "proxy_privacy_policy": "מדיניות הפרטיות של פרוקסי",
     "reload": "לִטעוֹן מִחָדָשׁ",
     "search": "לחפש",
     "share": "לַחֲלוֹק",
     "shortcuts": "קיצורי דרך",
+    "social_description": "Follow us on social media to stay updated with the latest news, updates and releases.",
+    "social_links": "Social links",
     "spotlight": "זַרקוֹר",
     "status": "סטָטוּס",
     "status_description": "Check the status of the website",
@@ -109,10 +120,27 @@
   },
   "authorization": {
     "generate_token": "צור אסימון",
+    "graphql_headers": "Authorization Headers are sent as part of the payload to connection_init",
     "include_in_url": "כלול בכתובת האתר",
+    "inherited_from": "Inherited from {auth} from Parent Collection {collection} ",
     "learn": "ללמוד איך",
+    "oauth": {
+      "redirect_auth_server_returned_error": "Auth Server returned an error state",
+      "redirect_auth_token_request_failed": "Request to get the auth token failed",
+      "redirect_auth_token_request_invalid_response": "Invalid Response from the Token Endpoint when requesting for an auth token",
+      "redirect_invalid_state": "Invalid State value present in the redirect",
+      "redirect_no_auth_code": "No Authorization Code present in the redirect",
+      "redirect_no_client_id": "No Client ID defined",
+      "redirect_no_client_secret": "No Client Secret Defined",
+      "redirect_no_code_verifier": "No Code Verifier Defined",
+      "redirect_no_token_endpoint": "No Token Endpoint Defined",
+      "something_went_wrong_on_oauth_redirect": "Something went wrong during OAuth Redirect",
+      "something_went_wrong_on_token_generation": "Something went wrong on token generation",
+      "token_generation_oidc_discovery_failed": "Failure on token generation: OpenID Connect Discovery Failed"
+    },
     "pass_key_by": "Pass by",
     "password": "סיסמה",
+    "save_to_inherit": "Please save this request in any collection to inherit the authorization",
     "token": "אֲסִימוֹן",
     "type": "סוג הרשאה",
     "username": "שם משתמש"
@@ -121,6 +149,7 @@
     "created": "אוסף נוצר",
     "different_parent": "Cannot reorder collection with different parent",
     "edit": "ערוך אוסף",
+    "import_or_create": "Import or create a collection",
     "invalid_name": "אנא ספק שם תקף לאוסף",
     "invalid_root_move": "Collection already in the root",
     "moved": "Moved Successfully",
@@ -129,15 +158,20 @@
     "name_length_insufficient": "Collection name should be at least 3 characters long",
     "new": "קולקציה חדשה",
     "order_changed": "Collection Order Updated",
+    "properties": "Collection Properties",
+    "properties_updated": "Collection Properties Updated",
     "renamed": "שם האוסף שונה",
     "request_in_use": "Request in use",
     "save_as": "שמור כ",
+    "save_to_collection": "Save to Collection",
     "select": "בחר אוסף",
     "select_location": "תבחר מיקום",
     "select_team": "בחר צוות",
     "team_collections": "אוספי צוות"
   },
   "confirm": {
+    "close_unsaved_tab": "Are you sure you want to close this tab?",
+    "close_unsaved_tabs": "Are you sure you want to close all tabs? {count} unsaved tabs will be lost.",
     "exit_team": "Are you sure you want to leave this team?",
     "logout": "האם אתה בטוח שאתה רוצה להתנתק?",
     "remove_collection": "האם אתה בטוח שברצונך למחוק את האוסף הזה לצמיתות?",
@@ -145,11 +179,35 @@
     "remove_folder": "האם אתה בטוח שברצונך למחוק תיקיה זו לצמיתות?",
     "remove_history": "האם אתה בטוח שברצונך למחוק לצמיתות את כל ההיסטוריה?",
     "remove_request": "האם אתה בטוח שברצונך למחוק בקשה זו לצמיתות?",
+    "remove_shared_request": "Are you sure you want to permanently delete this shared request?",
     "remove_team": "האם אתה בטוח שברצונך למחוק את הצוות הזה?",
     "remove_telemetry": "האם אתה בטוח שברצונך לבטל את הסכמתך לטלמטריה?",
     "request_change": "Are you sure you want to discard current request, unsaved changes will be lost.",
     "save_unsaved_tab": "Do you want to save changes made in this tab?",
     "sync": "האם אתה בטוח שברצונך לסנכרן את סביבת העבודה הזו?"
+  },
+  "context_menu": {
+    "add_parameters": "Add to parameters",
+    "open_request_in_new_tab": "Open request in new tab",
+    "set_environment_variable": "Set as variable"
+  },
+  "cookies": {
+    "modal": {
+      "cookie_expires": "Expires",
+      "cookie_name": "Name",
+      "cookie_path": "Path",
+      "cookie_string": "Cookie string",
+      "cookie_value": "Value",
+      "empty_domain": "Domain is empty",
+      "empty_domains": "Domain list is empty",
+      "enter_cookie_string": "Enter cookie string",
+      "interceptor_no_support": "Your currently selected interceptor does not support cookies. Select a different Interceptor and try again.",
+      "managed_tab": "Managed",
+      "new_domain_name": "New domain name",
+      "no_cookies_in_domain": "No cookies set for this domain",
+      "raw_tab": "Raw",
+      "set": "Set a cookie"
+    }
   },
   "count": {
     "header": "כותרת {count}",
@@ -181,11 +239,13 @@
     "profile": "Login to view your profile",
     "protocols": "הפרוטוקולים ריקים",
     "schema": "התחבר לנקודת קצה של GraphQL",
-    "shortcodes": "Shortcodes are empty",
+    "shared_requests": "Shared requests are empty",
+    "shared_requests_logout": "Login to view your shared requests or create a new one",
     "subscription": "Subscriptions are empty",
     "team_name": "שם הקבוצה ריק",
     "teams": "הקבוצות ריקות",
-    "tests": "אין בדיקות לבקשה זו"
+    "tests": "אין בדיקות לבקשה זו",
+    "shortcodes": "Shortcodes are empty"
   },
   "environment": {
     "add_to_global": "Add to Global",
@@ -193,22 +253,39 @@
     "create_new": "צור סביבה חדשה",
     "created": "Environment created",
     "deleted": "Environment deletion",
+    "duplicated": "Environment duplicated",
     "edit": "ערוך את הסביבה",
+    "empty_variables": "No variables",
+    "global": "Global",
+    "global_variables": "Global variables",
+    "import_or_create": "Import or create a environment",
     "invalid_name": "אנא ספק שם חוקי לסביבה",
+    "list": "Environment variables",
     "my_environments": "My Environments",
+    "name": "Name",
     "nested_overflow": "nested environment variables are limited to 10 levels",
     "new": "סביבה חדשה",
+    "no_active_environment": "No active environment",
     "no_environment": "אין סביבה",
     "no_environment_description": "No environments were selected. Choose what to do with the following variables.",
+    "quick_peek": "Environment Quick Peek",
+    "replace_with_variable": "Replace with variable",
+    "scope": "Scope",
     "select": "בחר סביבה",
+    "set": "Set environment",
+    "set_as_environment": "Set as environment",
     "team_environments": "Team Environments",
     "title": "סביבות",
     "updated": "Environment updation",
+    "value": "Value",
+    "variable": "Variable",
     "variable_list": "רשימת משתנים"
   },
   "error": {
+    "authproviders_load_error": "Unable to load auth providers",
     "browser_support_sse": "נראה שלדפדפן זה אין תמיכה באירועי שרת נשלח.",
     "check_console_details": "בדוק את יומן המסוף לפרטים.",
+    "check_how_to_add_origin": "Check how you can add an origin",
     "curl_invalid_format": "cURL אינו בפורמט תקין",
     "danger_zone": "Danger zone",
     "delete_account": "Your account is currently an owner in these teams:",
@@ -224,9 +301,13 @@
     "json_prettify_invalid_body": "לא ניתן היה לייפות גוף לא חוקי, לפתור שגיאות תחביר של json ולנסות שוב",
     "network_error": "There seems to be a network error. Please try again.",
     "network_fail": "לא ניתן היה לשלוח בקשה",
+    "no_collections_to_export": "No collections to export. Please create a collection to get started.",
     "no_duration": "אין משך זמן",
+    "no_environments_to_export": "No environments to export. Please create an environment to get started.",
     "no_results_found": "No matches found",
     "page_not_found": "This page could not be found",
+    "please_install_extension": "Please install the extension and add origin to the extension.",
+    "proxy_error": "Proxy error",
     "script_fail": "לא ניתן להפעיל סקריפט של בקשה מראש",
     "something_went_wrong": "משהו השתבש",
     "test_script_fail": "Could not execute post-request script"
@@ -234,6 +315,7 @@
   "export": {
     "as_json": "ייצא כ- JSON",
     "create_secret_gist": "צור גיסט סודי",
+    "failed": "Something went wrong while exporting",
     "gist_created": "גיסט נוצר",
     "require_github": "התחבר עם GitHub כדי ליצור תמצית סודית",
     "title": "Export"
@@ -252,9 +334,16 @@
     "renamed": "שם התיקייה שונה"
   },
   "graphql": {
+    "connection_switch_confirm": "Do you want to connect with the latest GraphQL endpoint?",
+    "connection_switch_new_url": "Switching to a tab will disconnected you from the active GraphQL connection. New connection URL is",
+    "connection_switch_url": "You're connected to a GraphQL endpoint the connection URL is",
     "mutations": "מוטציות",
     "schema": "סכֵימָה",
-    "subscriptions": "מנויים"
+    "subscriptions": "מנויים",
+    "switch_connection": "Switch connection"
+  },
+  "graphql_collections": {
+    "title": "GraphQL Collections"
   },
   "group": {
     "time": "Time",
@@ -267,6 +356,8 @@
   },
   "helpers": {
     "authorization": "כותרת ההרשאה תיווצר אוטומטית בעת שליחת הבקשה.",
+    "collection_properties_authorization": " This authorization will be set for every request in this collection.",
+    "collection_properties_header": "This header will be set for every request in this collection.",
     "generate_documentation_first": "צור קודם כל תיעוד",
     "network_fail": "לא ניתן להגיע לנקודת הסיום של ה- API. בדוק את חיבור הרשת שלך ונסה שוב.",
     "offline": "נראה שאתה מחובר לאינטרנט. יתכן שהנתונים בסביבת עבודה זו אינם מעודכנים.",
@@ -286,7 +377,10 @@
   "import": {
     "collections": "ייבוא אוספים",
     "curl": "ייבא cURL",
+    "environments_from_gist": "Import From Gist",
+    "environments_from_gist_description": "Import Hoppscotch Environments From Gist",
     "failed": "הייבוא נכשל",
+    "from_file": "Import from File",
     "from_gist": "ייבוא מ- Gist",
     "from_gist_description": "Import from Gist URL",
     "from_insomnia": "Import from Insomnia",
@@ -301,27 +395,58 @@
     "from_postman_description": "Import from Postman collection",
     "from_url": "Import from URL",
     "gist_url": "הזן Gist URL",
+    "gql_collections_from_gist_description": "Import GraphQL Collections From Gist",
+    "hoppscotch_environment": "Hoppscotch Environment",
+    "hoppscotch_environment_description": "Import Hoppscotch Environment JSON file",
     "import_from_url_invalid_fetch": "Couldn't get data from the url",
     "import_from_url_invalid_file_format": "Error while importing collections",
     "import_from_url_invalid_type": "Unsupported type. accepted values are 'hoppscotch', 'openapi', 'postman', 'insomnia'",
     "import_from_url_success": "Collections Imported",
+    "insomnia_environment_description": "Import Insomnia Environment from a JSON/YAML file",
     "json_description": "Import collections from a Hoppscotch Collections JSON file",
+    "postman_environment": "Postman Environment",
+    "postman_environment_description": "Import Postman Environment from a JSON file",
     "title": "יְבוּא"
+  },
+  "inspections": {
+    "description": "Inspect possible errors",
+    "environment": {
+      "add_environment": "Add to Environment",
+      "not_found": "Environment variable “{environment}” not found."
+    },
+    "header": {
+      "cookie": "The browser doesn't allow Hoppscotch to set the Cookie Header. While we're working on the Hoppscotch Desktop App (coming soon), please use the Authorization Header instead."
+    },
+    "response": {
+      "401_error": "Please check your authentication credentials.",
+      "404_error": "Please check your request URL and method type.",
+      "cors_error": "Please check your Cross-Origin Resource Sharing configuration.",
+      "default_error": "Please check your request.",
+      "network_error": "Please check your network connection."
+    },
+    "title": "Inspector",
+    "url": {
+      "extension_not_installed": "Extension not installed.",
+      "extension_unknown_origin": "Make sure you've added the API endpoint's origin to the Hoppscotch Browser Extension list.",
+      "extention_enable_action": "Enable Browser Extension",
+      "extention_not_enabled": "Extension not enabled."
+    }
   },
   "layout": {
     "collapse_collection": "Collapse or Expand Collections",
     "collapse_sidebar": "Collapse or Expand the sidebar",
     "column": "Vertical layout",
     "name": "Layout",
-    "row": "Horizontal layout",
-    "zen_mode": "מצב זן"
+    "row": "Horizontal layout"
   },
   "modal": {
     "close_unsaved_tab": "You have unsaved changes",
     "collections": "אוספים",
     "confirm": "לְאַשֵׁר",
+    "customize_request": "Customize Request",
     "edit_request": "ערוך בקשה",
-    "import_export": "יבוא ויצוא"
+    "import_export": "יבוא ויצוא",
+    "share_request": "Share Request"
   },
   "mqtt": {
     "already_subscribed": "You are already subscribed to this topic.",
@@ -396,13 +521,14 @@
       "structured": "Structured",
       "text": "Text"
     },
-    "copy_link": "העתק קישור",
     "different_collection": "Cannot reorder requests from different collections",
     "duplicated": "Request duplicated",
     "duration": "מֶשֶׁך",
     "enter_curl": "הזן cURL",
     "generate_code": "צור קוד",
     "generated_code": "קוד שנוצר",
+    "go_to_authorization_tab": "Go to Authorization tab",
+    "go_to_body_tab": "Go to Body tab",
     "header_list": "רשימת כותרות",
     "invalid_name": "אנא ספק שם לבקשה",
     "method": "שיטה",
@@ -419,6 +545,7 @@
     "payload": "מטען",
     "query": "שאילתא",
     "raw_body": "גוף בקשה גולמית",
+    "rename": "Rename Request",
     "renamed": "שם הבקשה שונה",
     "run": "לָרוּץ",
     "save": "להציל",
@@ -426,11 +553,14 @@
     "saved": "הבקשה נשמרה",
     "share": "לַחֲלוֹק",
     "share_description": "Share Hoppscotch with your friends",
+    "share_request": "Share Request",
+    "stop": "Stop",
     "title": "בַּקָשָׁה",
     "type": "סוג בקשה",
     "url": "כתובת URL",
     "variables": "משתנים",
-    "view_my_links": "View my links"
+    "view_my_links": "View my links",
+    "copy_link": "העתק קישור"
   },
   "response": {
     "audio": "Audio",
@@ -458,9 +588,9 @@
     "account_description": "התאם אישית את הגדרות החשבון שלך.",
     "account_email_description": "כתובת הדוא\"ל הראשית שלך.",
     "account_name_description": "זהו שם התצוגה שלך.",
+    "additional": "Additional Settings",
     "background": "רקע כללי",
     "black_mode": "שָׁחוֹר",
-    "change_font_size": "שנה גודל פונט",
     "choose_language": "בחר שפה",
     "dark_mode": "אפל",
     "delete_account": "Delete account",
@@ -473,10 +603,6 @@
     "extensions": "הרחבות",
     "extensions_use_toggle": "השתמש בתוסף הדפדפן כדי לשלוח בקשות (אם קיימות)",
     "follow": "Follow Us",
-    "font_size": "גודל גופן",
-    "font_size_large": "גָדוֹל",
-    "font_size_medium": "בינוני",
-    "font_size_small": "קָטָן",
     "interceptor": "מיירט",
     "interceptor_description": "תוכנת ביניים בין יישום לממשקי API.",
     "language": "שפה",
@@ -509,14 +635,31 @@
     "verified_email": "Verified email",
     "verify_email": "Verify email"
   },
-  "shortcodes": {
-    "actions": "Actions",
-    "created_on": "Created on",
-    "deleted": "Shortcode deleted",
-    "method": "Method",
-    "not_found": "Shortcode not found",
-    "short_code": "Short code",
-    "url": "URL"
+  "shared_requests": {
+    "button": "Button",
+    "button_info": "Create a 'Run in Hoppscotch' button for your website, blog or a README.",
+    "copy_html": "Copy HTML",
+    "copy_link": "Copy Link",
+    "copy_markdown": "Copy Markdown",
+    "creating_widget": "Creating widget",
+    "customize": "Customize",
+    "deleted": "Shared request deleted",
+    "description": "Select a widget, you can change and customize this later",
+    "embed": "Embed",
+    "embed_info": "Add a mini 'Hoppscotch API Playground' to your website, blog or documentation.",
+    "link": "Link",
+    "link_info": "Create a shareable link to share with anyone on the internet with view access.",
+    "modified": "Shared request modified",
+    "not_found": "Shared request not found",
+    "open_new_tab": "Open in new tab",
+    "preview": "Preview",
+    "run_in_hoppscotch": "Run in Hoppscotch",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "title": "Theme"
+    }
   },
   "shortcut": {
     "general": {
@@ -541,20 +684,29 @@
       "settings": "עבור אל דף ההגדרות",
       "title": "ניווט"
     },
+    "others": {
+      "prettify": "Prettify Editor's Content",
+      "title": "Others"
+    },
     "request": {
-      "copy_request_link": "העתק קישור לבקשה",
       "delete_method": "בחר שיטת DELETE",
       "get_method": "בחר שיטת GET",
       "head_method": "בחר שיטת HEAD",
+      "import_curl": "Import cURL",
       "method": "שיטה",
       "next_method": "בחר בשיטה הבאה",
       "post_method": "בחר שיטת POST",
       "previous_method": "בחר שיטה קודמת",
       "put_method": "בחר שיטת PUT",
+      "rename": "Rename Request",
       "reset_request": "איפוס הבקשה",
+      "save_request": "Save Request",
       "save_to_collections": "שמור באוספים",
       "send_request": "שלח בקשה",
-      "title": "בַּקָשָׁה"
+      "share_request": "Share Request",
+      "show_code": "Generate code snippet",
+      "title": "בַּקָשָׁה",
+      "copy_request_link": "העתק קישור לבקשה"
     },
     "response": {
       "copy": "Copy response to clipboard",
@@ -583,6 +735,85 @@
     "log": "עֵץ",
     "url": "כתובת URL"
   },
+  "spotlight": {
+    "change_language": "Change Language",
+    "environments": {
+      "delete": "Delete current environment",
+      "duplicate": "Duplicate current environment",
+      "duplicate_global": "Duplicate global environment",
+      "edit": "Edit current environment",
+      "edit_global": "Edit global environment",
+      "new": "Create new environment",
+      "new_variable": "Create a new environment variable",
+      "title": "Environments"
+    },
+    "general": {
+      "chat": "Chat with support",
+      "help_menu": "Help and support",
+      "open_docs": "Read Documentation",
+      "open_github": "Open GitHub repository",
+      "open_keybindings": "Keyboard shortcuts",
+      "social": "Social",
+      "title": "General"
+    },
+    "graphql": {
+      "connect": "Connect to server",
+      "disconnect": "Disconnect from server"
+    },
+    "miscellaneous": {
+      "invite": "Invite your friends to Hoppscotch",
+      "title": "Miscellaneous"
+    },
+    "request": {
+      "save_as_new": "Save as new request",
+      "select_method": "Select method",
+      "switch_to": "Switch to",
+      "tab_authorization": "Authorization tab",
+      "tab_body": "Body tab",
+      "tab_headers": "Headers tab",
+      "tab_parameters": "Parameters tab",
+      "tab_pre_request_script": "Pre-request script tab",
+      "tab_query": "Query tab",
+      "tab_tests": "Tests tab",
+      "tab_variables": "Variables tab"
+    },
+    "response": {
+      "copy": "Copy response",
+      "download": "Download response as file",
+      "title": "Response"
+    },
+    "section": {
+      "interceptor": "Interceptor",
+      "interface": "Interface",
+      "theme": "Theme",
+      "user": "User"
+    },
+    "settings": {
+      "change_interceptor": "Change Interceptor",
+      "change_language": "Change Language",
+      "theme": {
+        "black": "Black",
+        "dark": "Dark",
+        "light": "Light",
+        "system": "System preference"
+      }
+    },
+    "tab": {
+      "close_current": "Close current tab",
+      "close_others": "Close all other tabs",
+      "duplicate": "Duplicate current tab",
+      "new_tab": "Open a new tab",
+      "title": "Tabs"
+    },
+    "workspace": {
+      "delete": "Delete current team",
+      "edit": "Edit current team",
+      "invite": "Invite people to team",
+      "new": "Create new team",
+      "switch_to_personal": "Switch to your personal workspace",
+      "title": "Teams"
+    }
+  },
   "sse": {
     "event_type": "סוג אירוע",
     "log": "עֵץ",
@@ -598,6 +829,7 @@
     "connection_error": "Failed to connect",
     "connection_failed": "Connection failed",
     "connection_lost": "Connection lost",
+    "copied_interface_to_clipboard": "Copied {language} interface type to clipboard",
     "copied_to_clipboard": "הועתק ללוח",
     "deleted": "נמחק",
     "deprecated": "מופחת",
@@ -605,10 +837,12 @@
     "disconnected": "מְנוּתָק",
     "disconnected_from": "נותק מ- {name}",
     "docs_generated": "נוצר תיעוד",
+    "download_failed": "Download failed",
     "download_started": "ההורדה החלה",
     "enabled": "מופעל",
     "file_imported": "הקובץ מיובא",
     "finished_in": "הסתיים תוך {duration} אלפיות השנייה",
+    "hide": "Hide",
     "history_deleted": "ההיסטוריה נמחקה",
     "linewrap": "עוטפים קווים",
     "loading": "טעינה...",
@@ -619,6 +853,7 @@
     "published_error": "Something went wrong while publishing msg: {topic} to topic: {message}",
     "published_message": "Published message: {message} to topic: {topic}",
     "reconnection_error": "Failed to reconnect",
+    "show": "Show",
     "subscribed_failed": "Failed to subscribe to topic: {topic}",
     "subscribed_success": "Successfully subscribed to topic: {topic}",
     "unsubscribed_failed": "Failed to unsubscribe from topic: {topic}",
@@ -640,8 +875,11 @@
   "tab": {
     "authorization": "הרשאה",
     "body": "גוּף",
+    "close": "Close Tab",
+    "close_others": "Close other Tabs",
     "collections": "אוספים",
     "documentation": "תיעוד",
+    "duplicate": "Duplicate Tab",
     "environments": "Environments",
     "headers": "כותרות",
     "history": "הִיסטוֹרִיָה",
@@ -651,6 +889,7 @@
     "queries": "שאילתות",
     "query": "שאילתא",
     "schema": "Schema",
+    "shared_requests": "Shared Requests",
     "socketio": "Socket.IO",
     "sse": "SSE",
     "tests": "בדיקות",
@@ -667,6 +906,7 @@
     "email_do_not_match": "Email doesn't match with your account details. Contact your team owner.",
     "exit": "יציאה מצוות",
     "exit_disabled": "רק הבעלים אינו יכול לצאת מהצוות",
+    "failed_invites": "Failed invites",
     "invalid_coll_id": "Invalid collection ID",
     "invalid_email_format": "פורמט הדוא\"ל אינו חוקי",
     "invalid_id": "Invalid team ID. Contact your team owner.",
@@ -708,6 +948,7 @@
     "same_target_destination": "Same target and destination",
     "saved": "הקבוצה ניצלה",
     "select_a_team": "Select a team",
+    "success_invites": "Success invites",
     "title": "צוותים",
     "we_sent_invite_link": "We sent an invite link to all invitees!",
     "we_sent_invite_link_description": "Ask all invitees to check their inbox. Click on the link to join the team."
@@ -739,5 +980,14 @@
     "personal": "My Workspace",
     "team": "Team Workspace",
     "title": "Workspaces"
+  },
+  "shortcodes": {
+    "actions": "Actions",
+    "created_on": "Created on",
+    "deleted": "Shortcode deleted",
+    "method": "Method",
+    "not_found": "Shortcode not found",
+    "short_code": "Short code",
+    "url": "URL"
   }
 }
